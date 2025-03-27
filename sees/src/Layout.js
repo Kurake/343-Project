@@ -5,9 +5,7 @@ const Layout = () => {
     return (
       <>
         <Topnav />
-        <div className="App">
-        </div>
-  
+        <div className="App" />
         <Outlet />
       </>
     )
