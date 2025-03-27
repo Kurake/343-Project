@@ -12,14 +12,14 @@ function Topnav() {
             <Navbar.Toggle aria-controls="basic-navbar-nav" />
             <Navbar.Collapse id="basic-navbar-nav">
                 <Nav className="me-auto">
-                    <Nav.Link href="#home"><Link to="/">Home</Link></Nav.Link>
-                    <Nav.Link href="#addevent"><Link to="addEvent">Add Events</Link></Nav.Link>
-                    <Nav.Link href="#management"><Link to="manage">Access Events</Link></Nav.Link>
-                    <Nav.Link href="#login"><Link to="login">Login</Link></Nav.Link>
+                    <Nav.Link as={Link} to="/">Home</Nav.Link>
+                    <Nav.Link as={Link} to="addEvent">Add Events</Nav.Link>
+                    <Nav.Link as={Link} to="manage">Access Events</Nav.Link>
+                    <Nav.Link as={Link} to="login">Login</Nav.Link>
                     <NavDropdown title="Sign Up" id="basic-nav-dropdown">
-                        <NavDropdown.Item href="#action/3.1"><Link to="signup">Attendee Sign Up</Link></NavDropdown.Item>
-                        <NavDropdown.Item href="#action/3.2"><Link to="signup">Organizer Sign Up</Link></NavDropdown.Item>
-                        <NavDropdown.Item href="#action/3.3"><Link to="signup">Sponsor Sign Up</Link></NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="signup">Attendee Sign Up</NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="signup">Organizer Sign Up</NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="signup">Sponsor Sign Up</NavDropdown.Item>
                     </NavDropdown>
                 </Nav>
             </Navbar.Collapse>
