@@ -111,3 +111,9 @@ body {
 .custom-dropdown .dropdown-item:hover {
   background-color: #45a049;
 }
+
+.App {
+  padding-left: 50px;
+  padding-right: 50px;
+  background-color: black;
+}

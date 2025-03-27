@@ -17,9 +17,9 @@ function Topnav() {
                     <Nav.Link as={Link} to="manage">Access Events</Nav.Link>
                     <Nav.Link as={Link} to="login">Login</Nav.Link>
                     <NavDropdown title="Sign Up" id="basic-nav-dropdown">
-                        <NavDropdown.Item as={Link} to="signup">Attendee Sign Up</NavDropdown.Item>
-                        <NavDropdown.Item as={Link} to="signup">Organizer Sign Up</NavDropdown.Item>
-                        <NavDropdown.Item as={Link} to="signup">Sponsor Sign Up</NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="signup" state="attendee">Attendee Sign Up</NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="signup" state="organizer">Organizer Sign Up</NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="signup" state="sponsor">Sponsor Sign Up</NavDropdown.Item>
                     </NavDropdown>
                 </Nav>
             </Navbar.Collapse>

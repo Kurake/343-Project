@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import Topnav from './Topnav';
-import './App.css';
+import './stylesheet.css';
 
 function Chatroom() {
   return (
