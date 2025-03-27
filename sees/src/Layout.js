@@ -4,7 +4,7 @@ import Topnav from './Topnav';
 const Layout = () => {
     return (
       <>
-        <Topnav></Topnav>
+        <Topnav />
         <div className="App">
         </div>
   
