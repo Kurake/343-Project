@@ -8,23 +8,23 @@ In the project directory, you can run:
 
 ### `npm start`
 
-Runs the app in the development mode.\
+Runs the app in the development mode.  
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-The page will reload when you make changes.\
+The page will reload when you make changes.  
 You may also see any lint errors in the console.
 
 ### `npm test`
 
-Launches the test runner in the interactive watch mode.\
+Launches the test runner in the interactive watch mode.  
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
+Builds the app for production to the `build` folder.  
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.\
+The build is minified and the filenames include the hashes.  
 Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
@@ -41,8 +41,7 @@ You don't have to ever use `eject`. The curated feature set is suitable for smal
 
 ## Learn More
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).  
 To learn React, check out the [React documentation](https://reactjs.org/).
 
 ### Code Splitting
@@ -68,3 +67,75 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+---
+
+## 🔧 Project Setup Overview (SEES Full Stack)
+
+### 📁 Project Structure
+
+```
+343-Project/
+├── sees/           # Frontend (React)
+├── server/         # Backend (Express)
+└── README.md
+```
+
+---
+
+### 🚀 Quick Start
+
+#### Prerequisites
+- Node.js
+- Git
+
+#### 1. Install Frontend Dependencies:
+```bash
+cd sees
+npm install
+```
+
+#### 2. Install Backend Dependencies:
+```bash
+cd ../server
+npm install
+```
+
+#### 3. Run Backend Server:
+```bash
+cd server
+node index.js
+```
+> Runs at: http://localhost:3001
+
+#### 4. Run Frontend App:
+```bash
+cd sees
+npm start
+```
+> Opens at: http://localhost:3000
+
+---
+
+## 🧩 Technologies Used
+
+### Frontend
+- React
+- React Bootstrap
+- Axios
+- React Router DOM
+
+### Backend
+- Express
+- Body-Parser
+- CORS
+
+---
+
+## 🛠️ Features Implemented
+
+- User Registration & Login
+- Role-based Access (Attendee, Organizer, Admin)
+- Event Creation
+- Real-Time Q&A Interface (Chat-style)
+- Basic Payment Flow (Simulated)
