@@ -11,6 +11,7 @@ import Chatroom from './Chatroom';
 import Events from './Events';
 import EventDetails from './EventDetails';
 import reportWebVitals from './reportWebVitals';
+import 'semantic-ui-css/semantic.min.css';
 
 export default function App(){
   return (

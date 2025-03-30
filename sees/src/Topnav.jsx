@@ -20,6 +20,7 @@ function Topnav() {
                         <NavDropdown.Item as={Link} to="signup" state="organizer">Organizer Sign Up</NavDropdown.Item>
                         <NavDropdown.Item as={Link} to="signup" state="sponsor">Sponsor Sign Up</NavDropdown.Item>
                     </NavDropdown>
+                    <Nav.Link as={Link} to="chatroom">Chatroom</Nav.Link>
                 </Nav>
             </Navbar.Collapse>
         </Container>
