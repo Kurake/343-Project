@@ -23,7 +23,7 @@ let rooms = [{
     id: globalRoomId,
     name: "Global", 
     userId: 0,
-    username: "None", 
+    screenname: "None", 
     avatar: "https://semantic-ui.com/images/avatar2/small/patrick.png",
     members: [],
 }];
@@ -43,7 +43,7 @@ io.use((socket, next) => {
           console.log("Use existing user from session", sessionId);
           socket.sessionId = sessionId;
           socket.userId = session.userId;
-          socket.username = session.username;
+          socket.username = session.screenname;
           socket.avatar = session.avatar;
           socket.roomId = session.roomId;
 
@@ -54,7 +54,7 @@ io.use((socket, next) => {
   console.log("Create new user");
   socket.sessionId = uuidv4();
   socket.userId = uuidv4();
-  socket.username = socket.handshake.auth.username;;
+  socket.username = socket.handshake.auth.screenname;;
   socket.roomId = globalRoomId;
 
   next();
@@ -72,9 +72,9 @@ io.on('connection', (socket) => {
 
 
 
-  // receive username and avatar from client once client is connected
-  socket.on("user", ({ username, avatar }) => {
-      socket.username = username
+  // receive screenname and avatar from client once client is connected
+  socket.on("user", ({ screenname, avatar }) => {
+      socket.username = screenname
       socket.avatar = avatar;
   });
 
@@ -86,7 +86,7 @@ io.on('connection', (socket) => {
 
       const user = { 
           userId: socket.userId, 
-          username: socket.username, 
+          screenname: socket.username, 
           avatar: socket.avatar, 
           roomId: socket.roomId 
       };
@@ -126,7 +126,7 @@ io.on('connection', (socket) => {
       const room = {
           id: uuidv4(),
           name: roomName,
-          username: socket.username,
+          screenname: socket.username,
           userId: socket.userId,
           avatar: socket.avatar,
           members: [],
@@ -159,7 +159,7 @@ io.on('connection', (socket) => {
       socket.broadcast.to(socket.roomId).emit("chat", msg);
 
 
-      // remove username of disconnected user from all rooms member list
+      // remove screenname of disconnected user from all rooms member list
       rooms.map(room => {
           if (room.members.includes(socket.username)) {
               let index = room.members.indexOf(socket.username);
@@ -194,7 +194,7 @@ io.on('connection', (socket) => {
           socket.broadcast.to(socket.roomId).emit("chat", msg);
 
 
-          // store username in new room members list
+          // store screenname in new room members list
           rooms.map(room => {
               if (room.id === socket.roomId) {
                   room.members.push(socket.username);
@@ -207,7 +207,7 @@ io.on('connection', (socket) => {
 
           let user = { 
               userId: socket.userId, 
-              username: socket.username, 
+              screenname: socket.username, 
               avatar: socket.avatar, 
               roomId: socket.roomId 
           };
@@ -249,7 +249,7 @@ io.on('connection', (socket) => {
 
       user = { 
           userId: socket.userId, 
-          username: socket.username, 
+          screenname: socket.username, 
           avatar: socket.avatar, 
           roomId: socket.roomId 
       };
@@ -274,7 +274,7 @@ io.on('connection', (socket) => {
           type: "message",
           room: socket.roomId,
           userId: socket.userId,
-          username: socket.username,
+          screenname: socket.username,
           avatar: socket.avatar,
           content: message,
           date: new Date(),
@@ -307,7 +307,7 @@ io.on('connection', (socket) => {
       users = users.filter(user => user.userId !== socket.userId);
 
 
-      // remove username of disconnected user from all rooms member list
+      // remove screenname of disconnected user from all rooms member list
       rooms.map(room => {
           if (room.members.includes(socket.username)) {
               let index = room.members.indexOf(socket.username);
