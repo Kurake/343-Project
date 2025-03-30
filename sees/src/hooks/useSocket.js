@@ -30,7 +30,7 @@ const useSocket = () => {
             console.log("Connected to server successfully");
             
             if (!sessionId)
-                socket.emit("user", { username: u, avatar: a });
+                socket.emit("user", { screenname: u, avatar: a });
 
             socket.emit("setUpUser");
         });
@@ -75,8 +75,8 @@ const useSocket = () => {
         });
 
 
-        socket.on("typing", (username) => {
-            setUserTyping(username);
+        socket.on("typing", (screenname) => {
+            setUserTyping(screenname);
         });
 
 
@@ -94,10 +94,10 @@ const useSocket = () => {
 
  
 
-    const logIn = ({ username, avatar }) => {
-        u = username;
+    const logIn = ({ screenname, avatar }) => {
+        u = screenname;
         a = avatar;
-        socket.auth = { username };
+        socket.auth = { screenname };
         socket.connect();
     }
 
