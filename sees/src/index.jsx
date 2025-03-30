@@ -11,6 +11,7 @@ import AddEvents from './AddEvents';
 import Layout from './Layout';
 import Chatroom from './Chatroom';
 import reportWebVitals from './reportWebVitals';
+import 'semantic-ui-css/semantic.min.css';
 
 export default function App(){
   return (
