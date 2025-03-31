@@ -53,6 +53,7 @@ const Events = () => {
       id: editingEvent ? editingEvent.id : events.length + 1,
       image: editingEvent ? editingEvent.image : placeholderImage,
       organizers: eventData.organizers.split(",").map(email => email.trim()).filter(Boolean),
+      price: parseFloat(eventData.price) || 0, 
     };
 
     if (editingEvent) {
