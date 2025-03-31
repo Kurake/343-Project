@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Container, Card, Button, Modal, Form, ListGroup } from "react-bootstrap";
+import { useUser } from './UserContext';
 
 const EventDetails = () => {
   const location = useLocation();
@@ -16,6 +17,8 @@ const EventDetails = () => {
   const [eventData, setEventData] = useState(event);
   const [newSession, setNewSession] = useState({ title: "", description: "", date: "", location: "", isOnline: false });
   
+  const { userBalance } = useUser();
+
   const handleShow = () => setShowModal(true);
   const handleClose = () => setShowModal(false);
   
@@ -90,6 +93,13 @@ const EventDetails = () => {
           <Card.Text>Organizers: {Array.isArray(event.organizers) ? event.organizers.join(", ") : "No organizers"}</Card.Text>
           <Button variant="warning" onClick={handleShow}>Edit Event</Button>
           <Button variant="success" className="ms-2" onClick={() => handleSessionShow()}>Add Session</Button>
+          <Button 
+            variant="primary" 
+            className="ms-2" 
+            onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
+          >
+            Register (${event.price ? event.price.toFixed(2) : '0.00'})
+          </Button>
         </Card.Body>
       </Card>
 
