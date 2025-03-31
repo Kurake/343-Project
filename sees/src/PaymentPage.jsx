@@ -1,0 +1,226 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Container, Card, Button, Alert, Form, Row, Col, Spinner } from 'react-bootstrap';
+import { useUser } from './UserContext';
+
+const PaymentPage = () => {
+  const { eventId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { userBalance, deductBalance } = useUser();
+  
+  const [event, setEvent] = useState(location.state?.event || null);
+  const [loading, setLoading] = useState(!event);
+  const [processing, setProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [showStripe, setShowStripe] = useState(false);
+  
+  useEffect(() => {
+    if (!event && eventId) {
+
+      setLoading(true);
+      setTimeout(() => {
+        // Mock API
+        const mockEvent = {
+          id: parseInt(eventId),
+          title: "Sample Event",
+          startDate: "2025-04-15",
+          endDate: "2025-04-17",
+          price: 9.99,
+          organizers: ["organizer@example.com"]
+        };
+        setEvent(mockEvent);
+        setLoading(false);
+      }, 800);
+    }
+  }, [event, eventId]);
+
+  const handlePayWithBalance = () => {
+    if (!userBalance || userBalance < event.price) {
+      setError(`Insufficient funds. Your balance: $${userBalance.toFixed(2)}`);
+      return;
+    }
+
+    setProcessing(true);
+        setTimeout(() => {
+      deductBalance(event.price);
+      setProcessing(false);
+      setPaymentSuccess(true);
+    }, 1500);
+  };
+
+  const handleStripePayment = () => {
+    setShowStripe(true);
+  };
+
+  const mockStripePayment = (success) => {
+    setProcessing(true);
+    
+    setTimeout(() => {
+      setProcessing(false);
+      if (success) {
+        setPaymentSuccess(true);
+      } else {
+        setError('Payment failed. Please try again.');
+      }
+      setShowStripe(false);
+    }, 1500);
+  };
+
+  if (loading) {
+    return (
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </Container>
+    );
+  }
+
+  if (paymentSuccess) {
+    return (
+      <Container className="mt-5">
+        <Card className="shadow p-4 text-center">
+          <Card.Body>
+            <div className="mb-4 text-success">
+              <i className="bi bi-check-circle-fill" style={{ fontSize: '3rem' }}></i>
+            </div>
+            <Card.Title as="h2">Payment Successful!</Card.Title>
+            <Card.Text>
+              Thank you for registering for <strong>{event.title}</strong>.
+              {userBalance !== undefined && (
+                <div className="mt-2">
+                  Your remaining balance: <strong>${userBalance.toFixed(2)}</strong>
+                </div>
+              )}
+            </Card.Text>
+            <Button 
+              variant="primary" 
+              onClick={() => navigate(`/event/${event.id}`)}
+            >
+              View Event Details
+            </Button>
+          </Card.Body>
+        </Card>
+      </Container>
+    );
+  }
+
+  return (
+    <Container className="mt-4">
+      <h2>Payment for Event Registration</h2>
+      
+      <Card className="mb-4 shadow-sm">
+        <Card.Body>
+          <Row>
+            <Col md={8}>
+              <Card.Title>{event.title}</Card.Title>
+              <Card.Text>
+                <strong>Date:</strong> {event.startDate} to {event.endDate}
+              </Card.Text>
+              <Card.Text>
+                <strong>Organizers:</strong> {Array.isArray(event.organizers) ? event.organizers.join(", ") : "N/A"}
+              </Card.Text>
+            </Col>
+            <Col md={4} className="text-md-end">
+              <h3 className="text-primary">${event.price.toFixed(2)}</h3>
+              <small className="text-muted">Registration fee</small>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
+
+      {error && <Alert variant="danger">{error}</Alert>}
+
+      <Card className="mb-4 shadow-sm">
+        <Card.Body>
+          <h4>Payment Options</h4>
+          
+          <div className="mb-4">
+            <h5>Option 1: Pay with your balance</h5>
+            <p>Current balance: <strong>${userBalance.toFixed(2)}</strong></p>
+            {userBalance >= event.price ? (
+              <Button 
+                variant="success" 
+                onClick={handlePayWithBalance}
+                disabled={processing}
+              >
+                {processing ? 'Processing...' : `Pay $${event.price.toFixed(2)} from my balance`}
+              </Button>
+            ) : (
+              <Alert variant="warning">
+                Insufficient balance. Please add funds or use Stripe payment.
+              </Alert>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <h5>Option 2: Pay with Stripe</h5>
+            {!showStripe ? (
+              <Button 
+                variant="primary" 
+                onClick={handleStripePayment}
+                disabled={processing}
+              >
+                Pay with Stripe
+              </Button>
+            ) : (
+              <Card className="p-3 border">
+                <h6>Stripe Test Mode</h6>
+                <p>Use any of these test card numbers:</p>
+                <ul>
+                  <li>Success: 4242 4242 4242 4242</li>
+                  <li>Failure: 4000 0000 0000 0002</li>
+                </ul>
+                
+                <Form>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Card Number</Form.Label>
+                    <Form.Control type="text" placeholder="1234 5678 9012 3456" />
+                  </Form.Group>
+                  <Row>
+                    <Col>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Expiry Date</Form.Label>
+                        <Form.Control type="text" placeholder="MM/YY" />
+                      </Form.Group>
+                    </Col>
+                    <Col>
+                      <Form.Group className="mb-3">
+                        <Form.Label>CVC</Form.Label>
+                        <Form.Control type="text" placeholder="123" />
+                      </Form.Group>
+                    </Col>
+                  </Row>
+                  <Button 
+                    variant="success" 
+                    onClick={() => mockStripePayment(true)}
+                    className="me-2"
+                  >
+                    Submit Success Test
+                  </Button>
+                  <Button 
+                    variant="warning" 
+                    onClick={() => mockStripePayment(false)}
+                  >
+                    Submit Failure Test
+                  </Button>
+                </Form>
+              </Card>
+            )}
+          </div>
+        </Card.Body>
+      </Card>
+
+      <Button 
+        variant="outline-secondary" 
+        onClick={() => navigate(-1)}
+      >
+        Cancel and Go Back
+      </Button>
+    </Container>
+  );
+};
+
+export default PaymentPage;
