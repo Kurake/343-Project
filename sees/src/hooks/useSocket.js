@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import io from 'socket.io-client';
 
-const socket = io("http://localhost:4000", { autoConnect: false });
+const socket = io("http://localhost:4000", {
+  query: {
+    sessionId: localStorage.getItem("sessionId") || undefined,
+    screenname: "user_screen_name",
+  }
+});
+
+var flipflop = true;
 
 const useSocket = () => {
 
@@ -27,12 +34,15 @@ const useSocket = () => {
 
 
         socket.on("connect", () => {
-            console.log("Connected to server successfully");
+            if(flipflop){
+                console.log("Connected to server successfully");
             
-            if (!sessionId)
-                socket.emit("user", { screenname: u, avatar: a });
-
-            socket.emit("setUpUser");
+                if (!sessionId)
+                    socket.emit("user", { screenname: u, avatar: a });
+    
+                socket.emit("setUpUser");
+            }
+            flipflop = !flipflop
         });
 
 
@@ -64,14 +74,17 @@ const useSocket = () => {
 
 
         socket.on("chat", (message) => {
-            setChat(prevchat => ({
-                ...prevchat, 
-                [message.room]: {
-                    messages: [...prevchat[message.room]?.messages || [], message],
-                    unread: (prevchat[message.room]?.unread || 0) + (message.type === "message" ? 1 : 0)
-                    }
-                })
-            );
+            if(flipflop){
+                setChat(prevchat => ({
+                    ...prevchat, 
+                    [message.room]: {
+                        messages: [...prevchat[message.room]?.messages || [], message],
+                        unread: (prevchat[message.room]?.unread || 0) + (message.type === "message" ? 1 : 0)
+                        }
+                    })
+                );
+            }
+            flipflop = !flipflop;
         });
 
 
@@ -111,6 +124,7 @@ const useSocket = () => {
 
 
     const sendMessage = (message) => {
+        console.log("MessageRecieved by sendMessage");
         socket.emit("message", message);
     }
 
