@@ -92,6 +92,18 @@ const Events = () => {
               <Form.Label>Organizer Emails (comma-separated)</Form.Label>
               <Form.Control type="text" name="organizers" value={eventData.organizers} onChange={handleChange} required />
             </Form.Group>
+            <Form.Group className="mb-3">
+            <Form.Label>Price ($)</Form.Label>
+            <Form.Control 
+              type="number" 
+              name="price" 
+              min="0" 
+              step="0.01" 
+              value={eventData.price || ""} 
+              onChange={handleChange} 
+              required 
+            />
+          </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
