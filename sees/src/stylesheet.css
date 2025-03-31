@@ -39,8 +39,8 @@
 
 html,
 body {
-  height: 100vh;
-  min-height: 100vh;
+  height: 95vh;
+  min-height: 95vh;
   background-color: #f4f6fb;
 }
 
@@ -51,7 +51,7 @@ body {
   justify-content: flex-start;
   align-items: center;
   background-color: #f4f6fb;
-  height: 100vh;
+  height: 95vh;
 }
 
 .chat_login {
@@ -106,14 +106,14 @@ body {
   /* border: 5px solid #1ecdc5; */
 }
 
-.username_input_holder {
+.screenname_input_holder {
   display: flex;
   flex-direction: row;
   justify-content: center;
   margin: 50px 0 20px 0;
 }
 
-.username_input {
+.screenname_input {
   border: 1px solid #d3d6e2;
   border-radius: 10px;
   font-size: 18px;

@@ -3,6 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import PopupRoomInfo from './PopupRoomInfo';
 import { Picker } from 'emoji-mart';
 
+//Missing expected behaviour - showing 'no users online' in an orange box
+// Not double posting
+
 const ChatApp = ({ client: { user, logOut, users, chat, rooms, createRoom, updateRoom, deleteRoom, sendMessage, typing, userTyping, stoppedTyping } }) => {
 
     const [roomName, setRoomName] = useState("");
@@ -31,6 +34,7 @@ const ChatApp = ({ client: { user, logOut, users, chat, rooms, createRoom, updat
     // keyup for message input
     const handleKeyUp = (e, message) => {
         if (e.keyCode === 13) {
+            console.log("KeyUp Message");
             sendMessage(message);
             setMessage("");
             setShowEmoji(false);
@@ -39,6 +43,7 @@ const ChatApp = ({ client: { user, logOut, users, chat, rooms, createRoom, updat
 
     const handleEmojiKeyUp = (e) => {
         if (e.keyCode === 13) {
+            console.log("EmojiKeyUp Message");
             sendMessage(message);
             setMessage("");
             setShowEmoji(false);
@@ -75,6 +80,7 @@ const ChatApp = ({ client: { user, logOut, users, chat, rooms, createRoom, updat
 
 
     const handleMessageSubmit = () => {
+        console.log("MessageSubmit Message");
         sendMessage(message); 
         setMessage("");
     }
