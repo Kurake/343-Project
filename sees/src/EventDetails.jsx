@@ -73,12 +73,14 @@ const EventDetails = () => {
     }));
   };
 
+  console.log("Event Image URL:", event.image);
+
   return (
     <Container className="mt-4">
       <Card className="shadow-sm p-4">
         <Card.Img 
           variant="top" 
-          src={event.image || "images/stock.jpg"} 
+          src={event.image || "/images/stock.jpg"} 
           alt={event.title} 
           style={{ height: "250px", objectFit: "cover" }} 
         />

@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Card, Button, Container, Row, Col, Form, Modal } from "react-bootstrap";
 
 const Events = () => {
-  const placeholderImage = "images/stock.jpg";
+  const placeholderImage = "/images/stock.jpg";
   const [events, setEvents] = useState([
-    { id: 1, title: "Conference", startDate: "2025-04-15", endDate: "2025-04-17", image: "images/event1.png", organizers: ["organizer1@example.com"] },
-    { id: 2, title: "Workshop", startDate: "2025-05-10", endDate: "2025-05-12", image: "images/event2.png", organizers: ["organizer2@example.com"] },
+    { id: 1, title: "Conference", startDate: "2025-04-15", endDate: "2025-04-17", image: "/images/logo192.png", organizers: ["organizer1@example.com"] },
+    { id: 2, title: "Workshop", startDate: "2025-05-10", endDate: "2025-05-12", image: "/images/logo512.png", organizers: ["organizer2@example.com"] },
     { id: 3, title: "Seminar", startDate: "2025-06-20", endDate: "2025-06-21", image: "", organizers: ["organizer3@example.com"] },
   ]);
   
