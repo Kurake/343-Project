@@ -15,6 +15,7 @@ function Topnav() {
                     <Nav.Link as={Link} to="/">Home</Nav.Link>
                     <Nav.Link as={Link} to="addEvent">Add Events</Nav.Link>
                     <Nav.Link as={Link} to="manage">Access Events</Nav.Link>
+                    <Nav.Link as={Link} to="Events">Event Dashboard</Nav.Link>
                     <Nav.Link as={Link} to="login">Login</Nav.Link>
                     <NavDropdown title="Sign Up" id="basic-nav-dropdown">
                         <NavDropdown.Item as={Link} to="signup" state="attendee">Attendee Sign Up</NavDropdown.Item>

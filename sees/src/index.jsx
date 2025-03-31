@@ -10,6 +10,8 @@ import Management from './Management';
 import AddEvents from './AddEvents';
 import Layout from './Layout';
 import Chatroom from './Chatroom';
+import Events from './Events';
+import EventDetails from './EventDetails';
 import reportWebVitals from './reportWebVitals';
 
 export default function App(){
@@ -23,6 +25,8 @@ export default function App(){
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
           <Route path="chatroom" element={<Chatroom />} />
+          <Route path="events" element={<Events />} />
+          <Route path="/event/:id" element={<EventDetails />} />
         </Route>
       </Routes>
     </BrowserRouter>
