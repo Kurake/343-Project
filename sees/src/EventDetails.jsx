@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom"; // Updated import
 import { Container, Card, Button, Modal, Form, ListGroup } from "react-bootstrap";
 import { useUser } from './UserContext';
 
 const EventDetails = () => {
   const location = useLocation();
+  const navigate = useNavigate(); // Added navigate
   const [event, setEvent] = useState({ 
     ...location.state, 
     organizers: Array.isArray(location.state.organizers) ? location.state.organizers : [],

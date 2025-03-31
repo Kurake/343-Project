@@ -1,79 +1,83 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import axios from 'axios';
+import { useUser } from '../UserContext';
 
-const avatars = [
-    "https://semantic-ui.com/images/avatar2/small/patrick.png",
-    "https://semantic-ui.com/images/avatar2/small/kristy.png",
-    "https://semantic-ui.com/images/avatar2/small/mark.png",
-    "https://semantic-ui.com/images/avatar2/small/matthew.png",
-    "https://semantic-ui.com/images/avatar2/small/elyse.png",
-    "https://semantic-ui.com/images/avatar2/small/lindsay.png",
-];
+function Login() {
+  const navigate = useNavigate();
+  const { login } = useUser();
 
-// const avatars = [
-//     {
-//         id: 1,
-//         url: "https://semantic-ui.com/images/avatar2/small/patrick.png",
-//     },
-//     {
-//         id: 2,
-//         url: "https://semantic-ui.com/images/avatar2/small/kristy.png",
-//     },
-//     {
-//         id: 3,
-//         url: "https://semantic-ui.com/images/avatar2/small/mark.png",
-//     },
-//     {
-//         id: 4,
-//         url: "https://semantic-ui.com/images/avatar2/small/matthew.png",
-//     },
-//     {
-//         id: 5,
-//         url: "https://semantic-ui.com/images/avatar2/small/elyse.png",
-//     },
-//     {
-//         id: 6,
-//         url: "https://semantic-ui.com/images/avatar2/small/lindsay.png",
-//     },
-// ];
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
 
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-function Login({ logIn }) {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    const [screenname, setScreenname] = useState("");
-    const [avatar, setAvatar] = useState("https://semantic-ui.com/images/avatar2/small/patrick.png");
+    try {
+      // Mock API response for development
+      // In production, uncomment this:
+      // const res = await axios.post('http://localhost:3001/api/auth/login', formData);
+      // const user = res.data.user;
+      
+      // For development, use this mock:
+      const user = {
+        name: formData.email.split('@')[0],
+        email: formData.email,
+        role: 'user'
+      };
 
-    return (
-        <div className="chat_login">
-            
-            <div className="logo_text">
-                <span>Chit</span> <span className="colored">Chat</span>
-            </div>
+      // Use context login function
+      login(user);
+      
+      alert(`Welcome ${user.name} (${user.role})`);
+      navigate('/events');
+    } catch (err) {
+      alert('Login failed — invalid credentials');
+    }
+  };
 
-            <div className="avatar_list">  
-                {
-                    avatars.map((avt, idx) => (
-                        <div className={avatar === avt ? "avatar active_avatar" : "avatar"} key={idx}>
-                            <img 
-                                src={avt} 
-                                className="avatar_image" 
-                                alt=""
-                                onClick={() => setAvatar(avt)} />
-                        </div>
-                    ))
-                }
+  return (
+    <div style={{ padding: '2rem' }}>
+      <h2>Login</h2>
+      <Form onSubmit={handleSubmit}>
+        <Form.Group className="mb-3" controlId="formEmail">
+          <Form.Label>Email (just use your username@example.com)</Form.Label>
+          <Form.Control
+            type="email"
+            name="email"
+            placeholder="Enter email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
 
-            </div>
+        <Form.Group className="mb-3" controlId="formPassword">
+          <Form.Label>Password</Form.Label>
+          <Form.Control
+            type="password"
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
 
-            <div className="screenname_input_holder">
-                <input type="text" value={screenname} placeholder="Enter Name" className="screenname_input" onChange={(e) => setScreenname(e.target.value)} />
-            </div>
-
-            <div className="btn_holder">
-                <button className="enter_chat_btn" onClick={() => logIn({ screenname, avatar })}>ENTER CHAT</button>
-            </div>
-
-        </div>
-    );
+        <Button variant="primary" type="submit">
+          Log In
+        </Button>
+      </Form>
+    </div>
+  );
 }
 
 export default Login;

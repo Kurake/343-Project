@@ -5,7 +5,7 @@ const UserContext = createContext();
 export const UserProvider = ({ children }) => {
   const [userBalance, setUserBalance] = useState(() => {
     const savedBalance = localStorage.getItem('userBalance');
-    return savedBalance ? parseFloat(savedBalance) : 10.00;
+    return savedBalance ? parseFloat(savedBalance) : 20.00;
   });
   
   const [user, setUser] = useState(() => {

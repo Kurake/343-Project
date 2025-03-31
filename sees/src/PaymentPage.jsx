@@ -15,6 +15,7 @@ const PaymentPage = () => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [error, setError] = useState('');
   const [showStripe, setShowStripe] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('credit');
   
   useEffect(() => {
     if (!event && eventId) {
@@ -193,6 +194,22 @@ const PaymentPage = () => {
                       </Form.Group>
                     </Col>
                   </Row>
+                  <Form.Check 
+                    type="radio"
+                    id="credit-card"
+                    name="paymentMethod"
+                    label="Credit Card"
+                    checked={paymentMethod === 'credit'}
+                    onChange={() => setPaymentMethod('credit')}
+                  />
+                  <Form.Check 
+                    type="radio"
+                    id="debit-card"
+                    name="paymentMethod"
+                    label="Debit Card"
+                    checked={paymentMethod === 'debit'}
+                    onChange={() => setPaymentMethod('debit')}
+                  />
                   <Button 
                     variant="success" 
                     onClick={() => mockStripePayment(true)}

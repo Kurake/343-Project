@@ -12,22 +12,26 @@ import Events from './Events';
 import EventDetails from './EventDetails';
 import reportWebVitals from './reportWebVitals';
 import 'semantic-ui-css/semantic.min.css';
+import PaymentPage from './PaymentPage';
+import { UserProvider } from './UserContext'; 
 
 export default function App(){
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="login" element={<Login />} />
-          <Route path="signup" element={<Signup />} />
-          <Route path="chatroom" element={<Chatroom />} />
-          <Route path="events" element={<Events />} />
-          <Route path="/event/:id" element={<EventDetails />} />
-          <Route path="/event/:eventId/payment" element={<PaymentPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <UserProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="login" element={<Login />} />
+            <Route path="signup" element={<Signup />} />
+            <Route path="chatroom" element={<Chatroom />} />
+            <Route path="events" element={<Events />} />
+            <Route path="/event/:id" element={<EventDetails />} />
+            <Route path="/event/:eventId/payment" element={<PaymentPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </UserProvider>
   );
 }
 
