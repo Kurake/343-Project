@@ -24,6 +24,7 @@ export default function App(){
           <Route path="chatroom" element={<Chatroom />} />
           <Route path="events" element={<Events />} />
           <Route path="/event/:id" element={<EventDetails />} />
+          <Route path="/event/:eventId/payment" element={<PaymentPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
