@@ -18,7 +18,15 @@ function Login() {
 
     try {
       const res = await axios.post('http://localhost:3001/api/auth/login', formData);
-      alert(`Welcome ${res.data.user.name} (${res.data.user.role})`);
+      const user = res.data.user;
+
+      // Store login state
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userName', user.name);
+      localStorage.setItem('userRole', user.role);
+
+      alert(`Welcome ${user.name} (${user.role})`);
+      // Optional: navigate('/home');
     } catch (err) {
       alert('Login failed — invalid credentials');
     }
