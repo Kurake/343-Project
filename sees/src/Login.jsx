@@ -3,6 +3,7 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../src/UserContext';
+
 function Login() {
   const navigate = useNavigate();
   const { login } = useUser();
@@ -20,22 +21,13 @@ function Login() {
     event.preventDefault();
 
     try {
-      // Mock API response for development
-      // In production, uncomment this:
-      // const res = await axios.post('http://localhost:3001/api/auth/login', formData);
-      // const user = res.data.user;
-      
-      // For development, use this mock:
       const user = {
         name: formData.email.split('@')[0],
         email: formData.email,
         role: 'user'
       };
 
-      // Use context login function
       login(user);
-      
-      // Store login state (redundant if using useUser hook, but keeping for compatibility)
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userName', user.name);
       localStorage.setItem('userRole', user.role);
@@ -47,12 +39,34 @@ function Login() {
     }
   };
 
+  const containerStyle = {
+    maxWidth: '500px',
+    margin: '3rem auto',
+    backgroundColor: '#ffffff',
+    padding: '2rem',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+  };
+
+  const titleStyle = {
+    textAlign: 'center',
+    color: '#2E2E2E',
+    marginBottom: '1.5rem',
+  };
+
+  const buttonStyle = {
+    backgroundColor: '#A7C7E7',
+    border: 'none',
+    width: '100%',
+    marginTop: '1rem',
+  };
+
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2>Login</h2>
+    <div style={containerStyle}>
+      <h2 style={titleStyle}>Login</h2>
       <Form onSubmit={handleSubmit}>
         <Form.Group className="mb-3" controlId="formEmail">
-          <Form.Label>Email (just use your username@example.com)</Form.Label>
+          <Form.Label>Email</Form.Label>
           <Form.Control
             type="email"
             name="email"
@@ -75,7 +89,7 @@ function Login() {
           />
         </Form.Group>
 
-        <Button variant="primary" type="submit">
+        <Button variant="primary" type="submit" style={buttonStyle}>
           Log In
         </Button>
       </Form>

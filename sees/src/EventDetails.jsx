@@ -1,11 +1,18 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom"; // Updated import
+import { useLocation, useNavigate } from "react-router-dom";
 import { Container, Card, Button, Modal, Form, ListGroup } from "react-bootstrap";
 import { useUser } from './UserContext';
 
+const pastelBox = {
+  backgroundColor: "#FDF6F0",
+  borderRadius: "16px",
+  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+  padding: "1.5rem",
+};
+
 const EventDetails = () => {
   const location = useLocation();
-  const navigate = useNavigate(); // Added navigate
+  const navigate = useNavigate();
   const [event, setEvent] = useState({ 
     ...location.state, 
     organizers: Array.isArray(location.state.organizers) ? location.state.organizers : [],
@@ -77,19 +84,17 @@ const EventDetails = () => {
     }));
   };
 
-  console.log("Event Image URL:", event.image);
-
   return (
     <Container className="mt-4">
-      <Card className="shadow-sm p-4">
+      <Card style={pastelBox}>
         <Card.Img 
           variant="top" 
           src={event.image || "/images/stock.jpg"} 
           alt={event.title} 
-          style={{ height: "250px", objectFit: "cover" }} 
+          style={{ height: "250px", objectFit: "cover", borderRadius: "10px" }} 
         />
         <Card.Body>
-          <Card.Title>{event.title}</Card.Title>
+          <Card.Title style={{ fontSize: "1.8rem", color: "#4F709C" }}>{event.title}</Card.Title>
           <Card.Text>Date: {event.startDate} - {event.endDate}</Card.Text>
           <Card.Text>Organizers: {Array.isArray(event.organizers) ? event.organizers.join(", ") : "No organizers"}</Card.Text>
           <Button variant="warning" onClick={handleShow}>Edit Event</Button>
@@ -104,11 +109,11 @@ const EventDetails = () => {
         </Card.Body>
       </Card>
 
-      <h4 className="mt-4">Sessions</h4>
+      <h4 className="mt-4" style={{ color: "#8B5FBF" }}>Sessions</h4>
       <ListGroup>
         {event.sessions.length > 0 ? (
           event.sessions.map((session, index) => (
-            <ListGroup.Item key={index} className="border rounded p-3 mb-2">
+            <ListGroup.Item key={index} className="border rounded p-3 mb-2" style={{ backgroundColor: "#FFF5F5" }}>
               <h5>{session.title}</h5>
               <p>{session.description}</p>
               <p><strong>Date:</strong> {session.date}</p>
@@ -119,10 +124,11 @@ const EventDetails = () => {
             </ListGroup.Item>
           ))
         ) : (
-          <p>No sessions added yet.</p>
+          <p style={{ color: "#888" }}>No sessions added yet.</p>
         )}
       </ListGroup>
 
+      {/* Event Modal */}
       <Modal show={showModal} onHide={handleClose}>
         <Modal.Header closeButton>
           <Modal.Title>Edit Event</Modal.Title>
@@ -153,6 +159,7 @@ const EventDetails = () => {
         </Modal.Footer>
       </Modal>
 
+      {/* Session Modal */}
       <Modal show={showSessionModal} onHide={handleSessionClose}>
         <Modal.Header closeButton>
           <Modal.Title>{editingSessionIndex !== null ? "Edit Session" : "Add Session"}</Modal.Title>
@@ -180,7 +187,9 @@ const EventDetails = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleSessionClose}>Close</Button>
-          <Button variant="primary" onClick={handleAddOrEditSession}>{editingSessionIndex !== null ? "Save Changes" : "Add Session"}</Button>
+          <Button variant="primary" onClick={handleAddOrEditSession}>
+            {editingSessionIndex !== null ? "Save Changes" : "Add Session"}
+          </Button>
         </Modal.Footer>
       </Modal>
     </Container>
