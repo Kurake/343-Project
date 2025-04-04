@@ -8,7 +8,7 @@ const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { userBalance, deductBalance } = useUser();
-  
+
   const [event, setEvent] = useState(location.state?.event || null);
   const [loading, setLoading] = useState(!event);
   const [processing, setProcessing] = useState(false);
@@ -16,13 +16,11 @@ const PaymentPage = () => {
   const [error, setError] = useState('');
   const [showStripe, setShowStripe] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('credit');
-  
+
   useEffect(() => {
     if (!event && eventId) {
-
       setLoading(true);
       setTimeout(() => {
-        // Mock API
         const mockEvent = {
           id: parseInt(eventId),
           title: "Sample Event",
@@ -44,7 +42,7 @@ const PaymentPage = () => {
     }
 
     setProcessing(true);
-        setTimeout(() => {
+    setTimeout(() => {
       deductBalance(event.price);
       setProcessing(false);
       setPaymentSuccess(true);
@@ -57,7 +55,6 @@ const PaymentPage = () => {
 
   const mockStripePayment = (success) => {
     setProcessing(true);
-    
     setTimeout(() => {
       setProcessing(false);
       if (success) {
@@ -67,6 +64,24 @@ const PaymentPage = () => {
       }
       setShowStripe(false);
     }, 1500);
+  };
+
+  const pastelBox = {
+    backgroundColor: '#fff8f0',
+    borderRadius: '20px',
+    padding: '2rem',
+    boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.05)'
+  };
+
+  const pastelHeader = {
+    color: '#A267AC',
+    fontWeight: 'bold'
+  };
+
+  const pastelPrice = {
+    color: '#5885AF',
+    fontSize: '2rem',
+    fontWeight: 'bold'
   };
 
   if (loading) {
@@ -82,22 +97,20 @@ const PaymentPage = () => {
   if (paymentSuccess) {
     return (
       <Container className="mt-5">
-        <Card className="shadow p-4 text-center">
+        <Card style={pastelBox} className="text-center">
           <Card.Body>
             <div className="mb-4 text-success">
               <i className="bi bi-check-circle-fill" style={{ fontSize: '3rem' }}></i>
             </div>
-            <Card.Title as="h2">Payment Successful!</Card.Title>
+            <Card.Title as="h2" style={pastelHeader}>Payment Successful!</Card.Title>
             <Card.Text>
               Thank you for registering for <strong>{event.title}</strong>.
-              {userBalance !== undefined && (
-                <div className="mt-2">
-                  Your remaining balance: <strong>${userBalance.toFixed(2)}</strong>
-                </div>
-              )}
+              <div className="mt-2">
+                Remaining balance: <strong>${userBalance.toFixed(2)}</strong>
+              </div>
             </Card.Text>
             <Button 
-              variant="primary" 
+              style={{ backgroundColor: '#A7C7E7', border: 'none' }} 
               onClick={() => navigate(`/event/${event.id}`)}
             >
               View Event Details
@@ -110,9 +123,9 @@ const PaymentPage = () => {
 
   return (
     <Container className="mt-4">
-      <h2>Payment for Event Registration</h2>
+      <h2 style={pastelHeader}>Payment for Event Registration</h2>
       
-      <Card className="mb-4 shadow-sm">
+      <Card className="mb-4" style={pastelBox}>
         <Card.Body>
           <Row>
             <Col md={8}>
@@ -125,7 +138,7 @@ const PaymentPage = () => {
               </Card.Text>
             </Col>
             <Col md={4} className="text-md-end">
-              <h3 className="text-primary">${event.price.toFixed(2)}</h3>
+              <div style={pastelPrice}>${event.price.toFixed(2)}</div>
               <small className="text-muted">Registration fee</small>
             </Col>
           </Row>
@@ -134,7 +147,7 @@ const PaymentPage = () => {
 
       {error && <Alert variant="danger">{error}</Alert>}
 
-      <Card className="mb-4 shadow-sm">
+      <Card className="mb-4" style={pastelBox}>
         <Card.Body>
           <h4>Payment Options</h4>
           
@@ -143,11 +156,11 @@ const PaymentPage = () => {
             <p>Current balance: <strong>${userBalance.toFixed(2)}</strong></p>
             {userBalance >= event.price ? (
               <Button 
-                variant="success" 
+                style={{ backgroundColor: '#CBAACB', border: 'none' }} 
                 onClick={handlePayWithBalance}
                 disabled={processing}
               >
-                {processing ? 'Processing...' : `Pay $${event.price.toFixed(2)} from my balance`}
+                {processing ? 'Processing...' : `Pay $${event.price.toFixed(2)} from balance`}
               </Button>
             ) : (
               <Alert variant="warning">
@@ -160,14 +173,14 @@ const PaymentPage = () => {
             <h5>Option 2: Pay with Stripe</h5>
             {!showStripe ? (
               <Button 
-                variant="primary" 
+                style={{ backgroundColor: '#A7C7E7', border: 'none' }} 
                 onClick={handleStripePayment}
                 disabled={processing}
               >
                 Pay with Stripe
               </Button>
             ) : (
-              <Card className="p-3 border">
+              <Card className="p-3 border" style={{ backgroundColor: '#fdf6ff' }}>
                 <h6>Stripe Test Mode</h6>
                 <p>Use any of these test card numbers:</p>
                 <ul>
@@ -212,13 +225,14 @@ const PaymentPage = () => {
                   />
                   <Button 
                     variant="success" 
+                    className="me-2 mt-3"
                     onClick={() => mockStripePayment(true)}
-                    className="me-2"
                   >
                     Submit Success Test
                   </Button>
                   <Button 
                     variant="warning" 
+                    className="mt-3"
                     onClick={() => mockStripePayment(false)}
                   >
                     Submit Failure Test
