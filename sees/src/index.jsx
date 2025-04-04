@@ -1,4 +1,4 @@
-import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap/dist/css/bootstrap.min.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
@@ -13,9 +13,10 @@ import EventDetails from './EventDetails';
 import reportWebVitals from './reportWebVitals';
 import 'semantic-ui-css/semantic.min.css';
 import PaymentPage from './PaymentPage';
-import { UserProvider } from './UserContext'; 
+import { UserProvider } from './UserContext';
+import Analytics from './Analytics'; // Import Analytics
 
-export default function App(){
+export default function App() {
   return (
     <UserProvider>
       <BrowserRouter>
@@ -28,6 +29,7 @@ export default function App(){
             <Route path="events" element={<Events />} />
             <Route path="/event/:id" element={<EventDetails />} />
             <Route path="/event/:eventId/payment" element={<PaymentPage />} />
+            <Route path="analytics" element={<Analytics />} /> {/* ✅ New Route */}
           </Route>
         </Routes>
       </BrowserRouter>
@@ -42,7 +44,9 @@ root.render(
   </React.StrictMode>
 );
 
+// Optional performance monitoring
+reportWebVitals();
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+// reportWebVitals(console.log);

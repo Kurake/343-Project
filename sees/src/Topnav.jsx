@@ -33,6 +33,7 @@ function Topnav() {
           <Nav className="me-auto">
             <Nav.Link as={Link} to="/" style={linkStyle}>Home</Nav.Link>
             <Nav.Link as={Link} to="Events" style={linkStyle}>Event Dashboard</Nav.Link>
+            <Nav.Link as={Link} to="analytics" style={linkStyle}>Analytics</Nav.Link> {/* ✅ New */}
             <Nav.Link as={Link} to="login" style={linkStyle}>Login</Nav.Link>
             <NavDropdown title="Sign Up" id="basic-nav-dropdown">
               <NavDropdown.Item as={Link} to="signup" state="attendee">
