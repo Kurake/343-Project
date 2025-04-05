@@ -1,55 +1,95 @@
 import React from 'react';
+import { Container, Row, Col, Card, Button } from 'react-bootstrap';
+import { useUser } from './UserContext';
+import { useEvents } from './EventsContext';
+import { useNavigate } from 'react-router-dom';
 
-function Home() {
-  const containerStyle = {
-    padding: '2rem',
-    backgroundColor: '#FDFDFD',
-    minHeight: '80vh',
-    textAlign: 'center',
-  };
+const Home = () => {
+  const { user } = useUser();
+  const { events } = useEvents();
+  const navigate = useNavigate();
 
-  const titleStyle = {
-    fontSize: '2.5rem',
-    color: '#2E2E2E',
-    marginBottom: '1rem',
-  };
+  const totalAttendees = events.reduce((sum, e) => sum + (e.attendeesCount || 0), 0);
+  const totalRevenue = events.reduce((sum, e) => sum + (e.revenue || 0), 0);
 
-  const subtitleStyle = {
-    fontSize: '1.6rem',
-    color: '#CBAACB',
-    margin: '2rem 0 1rem 0',
-    borderBottom: '2px solid #FFB5A7',
-    display: 'inline-block',
-    paddingBottom: '0.5rem',
-  };
-
-  const listStyle = {
-    listStyleType: 'none',
-    padding: 0,
-    fontSize: '1.2rem',
-    color: '#4B4B4B',
-  };
-
-  const itemStyle = {
-    margin: '1rem 0',
-    backgroundColor: '#fff',
-    padding: '1rem',
-    borderRadius: '10px',
-    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.05)',
-  };
+  const upcomingEvents = events
+    .filter(e => new Date(e.startDate) > new Date())
+    .slice(0, 3);
 
   return (
-    <div style={containerStyle}>
-      <h1 style={titleStyle}>Welcome to SEES 👋</h1>
-      <h2 style={subtitleStyle}>To Do List:</h2>
-      <ul style={listStyle}>
-        <li style={itemStyle}>✅ Implement User Registration and Login</li>
-        <li style={itemStyle}>🗓️ Implement Event Creation and Management</li>
-        <li style={itemStyle}>💬 Implement Live Chat</li>
-        <li style={itemStyle}>💳 Implement Payment Integration</li>
-      </ul>
-    </div>
+    <Container className="mt-4">
+      {/* Hero Banner */}
+      <Card className="mb-4 shadow-sm text-center p-4" style={{ backgroundColor: '#A7C7E7' }}>
+        <h1 style={{ color: '#fff', fontWeight: 'bold' }}>Welcome to Smart Education Events System</h1>
+        {user?.isLoggedIn && <h4 style={{ color: '#fff' }}>Hello, {user.name} 👋</h4>}
+      </Card>
+
+      {/* Stats */}
+      <Row className="mb-4">
+        <Col md={4}>
+          <Card className="text-center shadow-sm p-3" style={{ backgroundColor: '#fef9ff' }}>
+            <h5>Total Events</h5>
+            <h3 style={{ color: '#A7C7E7' }}>{events.length}</h3>
+          </Card>
+        </Col>
+        <Col md={4}>
+          <Card className="text-center shadow-sm p-3" style={{ backgroundColor: '#fef9ff' }}>
+            <h5>Total Attendees</h5>
+            <h3 style={{ color: '#FFB5A7' }}>{totalAttendees}</h3>
+          </Card>
+        </Col>
+        <Col md={4}>
+          <Card className="text-center shadow-sm p-3" style={{ backgroundColor: '#fef9ff' }}>
+            <h5>Total Revenue</h5>
+            <h3 style={{ color: '#CBAACB' }}>${totalRevenue.toFixed(2)}</h3>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Upcoming Events */}
+      <h4 className="mb-3" style={{ color: '#7a5195' }}>Upcoming Events</h4>
+      <Row className="mb-4">
+        {upcomingEvents.length > 0 ? (
+          upcomingEvents.map(e => (
+            <Col key={e.id} md={4}>
+              <Card className="p-3 shadow-sm mb-3" style={{ backgroundColor: '#fef9ff' }}>
+                <h5>{e.title}</h5>
+                <p>{e.startDate} - {e.endDate}</p>
+                <Button 
+                  size="sm" 
+                  style={{ backgroundColor: '#CBAACB', border: 'none' }} 
+                  onClick={() => navigate(`/event/${e.id}`, { state: e })}
+                >
+                  View Details
+                </Button>
+              </Card>
+            </Col>
+          ))
+        ) : (
+          <p className="text-muted">No upcoming events.</p>
+        )}
+      </Row>
+
+      {/* Quick Actions */}
+      <div className="text-center">
+        <Button 
+          variant="primary" 
+          className="me-3" 
+          onClick={() => navigate('/events')}
+          style={{ backgroundColor: '#A7C7E7', border: 'none' }}
+        >
+          Go to Events
+        </Button>
+        <Button 
+          variant="secondary" 
+          onClick={() => navigate('/analytics')}
+          style={{ backgroundColor: '#CBAACB', border: 'none' }}
+        >
+          View Analytics
+        </Button>
+      </div>
+    </Container>
   );
-}
+};
 
 export default Home;
