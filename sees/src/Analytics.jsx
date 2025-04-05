@@ -1,68 +1,130 @@
-// src/Analytics.jsx
 import React from 'react';
-import { Bar, Pie, Line } from 'react-chartjs-2';
-import { Container, Card } from 'react-bootstrap';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement } from 'chart.js';
+import { Container, Row, Col, Card } from 'react-bootstrap';
+import { Bar, Pie } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+import { useEvents } from './EventsContext'; // ✅ Import live context
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Analytics = () => {
-  // Mock Data
-  const eventsPerMonth = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr'],
-    datasets: [{
-      label: 'Events Created',
-      data: [4, 6, 3, 7],
-      backgroundColor: '#A7C7E7'
-    }]
+  const { events } = useEvents(); // ✅ Use shared live events
+
+  // ---- Data Prep ----
+  const eventsPerMonth = {};
+  const organizerMap = {};
+  let totalAttendees = 0;
+  let totalRevenue = 0;
+
+  events.forEach(event => {
+    const month = new Date(event.startDate).toLocaleString('default', { month: 'short', year: 'numeric' });
+    eventsPerMonth[month] = (eventsPerMonth[month] || 0) + 1;
+
+    event.organizers.forEach(org => {
+      organizerMap[org] = (organizerMap[org] || 0) + 1;
+    });
+
+    totalAttendees += event.attendeesCount || 0;
+    totalRevenue += event.revenue || 0;
+  });
+
+  // ---- Chart Data ----
+  const eventsPerMonthData = {
+    labels: Object.keys(eventsPerMonth),
+    datasets: [
+      {
+        label: 'Events Created',
+        data: Object.values(eventsPerMonth),
+        backgroundColor: '#A7C7E7',
+      },
+    ],
   };
 
-  const organizersActivity = {
-    labels: ['Alice', 'Bob', 'Charlie', 'Dana'],
-    datasets: [{
-      label: 'Events Organized',
-      data: [5, 3, 7, 2],
-      backgroundColor: ['#CBAACB', '#FFB5A7', '#A7C7E7', '#FDFDFD']
-    }]
+  const organizerPieData = {
+    labels: Object.keys(organizerMap),
+    datasets: [
+      {
+        data: Object.values(organizerMap),
+        backgroundColor: ['#CBAACB', '#FFB5A7', '#FFD6A5', '#B5EAD7', '#A7C7E7'],
+      },
+    ],
   };
 
   const revenueData = {
-    labels: ['Conference', 'Workshop', 'Seminar'],
-    datasets: [{
-      label: 'Revenue ($)',
-      data: [150, 60, 90],
-      borderColor: '#2E2E2E',
-      backgroundColor: '#CBAACB',
-      tension: 0.4,
-      fill: true
-    }]
+    labels: events.map(e => e.title),
+    datasets: [
+      {
+        label: 'Revenue ($)',
+        data: events.map(e => e.revenue),
+        backgroundColor: '#FFB5A7',
+      },
+    ],
   };
-
-  const totalRegistrations = 102;
 
   return (
     <Container className="mt-4">
-      <h2 className="text-center mb-4">Analytics & Reporting</h2>
+      <h2 style={{ color: '#7a5195', marginBottom: '1rem' }}>Analytics & Reporting</h2>
+      
+      <Row className="mb-4">
+        <Col md={4}>
+          <Card className="text-center shadow-sm p-3" style={{ backgroundColor: '#fef9ff' }}>
+            <h5>Total Events Planned</h5>
+            <h3 style={{ color: '#A7C7E7' }}>{events.length}</h3>
+          </Card>
+        </Col>
+        <Col md={4}>
+          <Card className="text-center shadow-sm p-3" style={{ backgroundColor: '#fef9ff' }}>
+            <h5>Total Attendees Registered</h5>
+            <h3 style={{ color: '#FFB5A7' }}>{totalAttendees}</h3>
+          </Card>
+        </Col>
+        <Col md={4}>
+          <Card className="text-center shadow-sm p-3" style={{ backgroundColor: '#fef9ff' }}>
+            <h5>Total Revenue</h5>
+            <h3 style={{ color: '#CBAACB' }}>${totalRevenue.toFixed(2)}</h3>
+          </Card>
+        </Col>
+      </Row>
 
-      <Card className="mb-4 p-3 shadow-sm">
-        <h4>Events Created Per Month</h4>
-        <Bar data={eventsPerMonth} />
-      </Card>
+      <Row className="mb-5">
+        <Col md={6}>
+          <Card className="p-3 shadow-sm" style={{ backgroundColor: '#fef9ff' }}>
+            <h5 style={{ color: '#7a5195' }}>Events Created Per Month</h5>
+            <Bar data={eventsPerMonthData} />
+          </Card>
+        </Col>
+        <Col md={6}>
+          <Card className="p-3 shadow-sm" style={{ backgroundColor: '#fef9ff' }}>
+            <h5 style={{ color: '#7a5195' }}>Most Active Organizers</h5>
+            <Pie data={organizerPieData} />
+          </Card>
+        </Col>
+      </Row>
 
-      <Card className="mb-4 p-3 shadow-sm">
-        <h4>Most Active Organizers</h4>
-        <Pie data={organizersActivity} />
-      </Card>
-
-      <Card className="mb-4 p-3 shadow-sm">
-        <h4>Revenue Per Event</h4>
-        <Line data={revenueData} />
-      </Card>
-
-      <Card className="mb-4 p-4 text-center shadow-sm">
-        <h4>Total Event Registrations</h4>
-        <h1 style={{ fontSize: '4rem', color: '#7a5195' }}>{totalRegistrations}</h1>
-      </Card>
+      <Row>
+        <Col>
+          <Card className="p-3 shadow-sm" style={{ backgroundColor: '#fef9ff' }}>
+            <h5 style={{ color: '#7a5195' }}>Revenue Per Event</h5>
+            <Bar data={revenueData} />
+          </Card>
+        </Col>
+      </Row>
     </Container>
   );
 };
