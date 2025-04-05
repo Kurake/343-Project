@@ -1,69 +1,47 @@
 import React, { useState } from 'react';
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../src/UserContext';
+import { Form, Button, Container, Alert } from 'react-bootstrap';
 
-function Login() {
+const Login = () => {
   const navigate = useNavigate();
   const { login } = useUser();
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = e => {
+    e.preventDefault();
+
+    if (!formData.email || !formData.password) {
+      setError("Please fill in both email and password.");
+      return;
+    }
 
     try {
       const user = {
         name: formData.email.split('@')[0],
         email: formData.email,
-        role: 'user'
+        role: 'user',
+        isLoggedIn: true
       };
 
       login(user);
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userName', user.name);
-      localStorage.setItem('userRole', user.role);
-
-      alert(`Welcome ${user.name} (${user.role})`);
-      navigate('/events');
+      navigate('/');
     } catch (err) {
-      alert('Login failed — invalid credentials');
+      setError("Login failed. Please try again.");
     }
   };
 
-  const containerStyle = {
-    maxWidth: '500px',
-    margin: '3rem auto',
-    backgroundColor: '#ffffff',
-    padding: '2rem',
-    borderRadius: '12px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-  };
-
-  const titleStyle = {
-    textAlign: 'center',
-    color: '#2E2E2E',
-    marginBottom: '1.5rem',
-  };
-
-  const buttonStyle = {
-    backgroundColor: '#A7C7E7',
-    border: 'none',
-    width: '100%',
-    marginTop: '1rem',
-  };
-
   return (
-    <div style={containerStyle}>
-      <h2 style={titleStyle}>Login</h2>
+    <Container style={styles.container}>
+      <h2 style={styles.title}>Login</h2>
+      {error && <Alert variant="danger">{error}</Alert>}
       <Form onSubmit={handleSubmit}>
         <Form.Group className="mb-3" controlId="formEmail">
           <Form.Label>Email</Form.Label>
@@ -89,12 +67,34 @@ function Login() {
           />
         </Form.Group>
 
-        <Button variant="primary" type="submit" style={buttonStyle}>
+        <Button type="submit" style={styles.button}>
           Log In
         </Button>
       </Form>
-    </div>
+    </Container>
   );
-}
+};
+
+const styles = {
+  container: {
+    maxWidth: '500px',
+    margin: '3rem auto',
+    backgroundColor: '#ffffff',
+    padding: '2rem',
+    borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+  },
+  title: {
+    textAlign: 'center',
+    color: '#2E2E2E',
+    marginBottom: '1.5rem',
+  },
+  button: {
+    backgroundColor: '#A7C7E7',
+    border: 'none',
+    width: '100%',
+    marginTop: '1rem',
+  },
+};
 
 export default Login;
