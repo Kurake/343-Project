@@ -14,24 +14,60 @@ import reportWebVitals from './reportWebVitals';
 import 'semantic-ui-css/semantic.min.css';
 import PaymentPage from './PaymentPage';
 import { UserProvider } from './UserContext';
-import { EventsProvider } from './EventsContext'; // ✅ Import EventsProvider
+import { EventsProvider } from './EventsContext';
 import Analytics from './Analytics';
+import PrivateRoute from './PrivateRoute'; // ✅
 
 export default function App() {
   return (
     <UserProvider>
-      <EventsProvider> {/* ✅ Wrap inside EventsProvider */}
+      <EventsProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
               <Route path="login" element={<Login />} />
               <Route path="signup" element={<Signup />} />
-              <Route path="chatroom" element={<Chatroom />} />
-              <Route path="events" element={<Events />} />
-              <Route path="/event/:id" element={<EventDetails />} />
-              <Route path="/event/:eventId/payment" element={<PaymentPage />} />
-              <Route path="analytics" element={<Analytics />} />
+              <Route
+                path="chatroom"
+                element={
+                  <PrivateRoute>
+                    <Chatroom />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="events"
+                element={
+                  <PrivateRoute>
+                    <Events />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/event/:id"
+                element={
+                  <PrivateRoute>
+                    <EventDetails />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/event/:eventId/payment"
+                element={
+                  <PrivateRoute>
+                    <PaymentPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="analytics"
+                element={
+                  <PrivateRoute>
+                    <Analytics />
+                  </PrivateRoute>
+                }
+              />
             </Route>
           </Routes>
         </BrowserRouter>

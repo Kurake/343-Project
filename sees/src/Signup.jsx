@@ -4,12 +4,15 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Row from 'react-bootstrap/Row';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useUser } from './UserContext'; // ✅ import
 
 function Signup() {
   const location = useLocation();
+  const navigate = useNavigate();
   const data = location.state;
+  const { login } = useUser(); // ✅ hook for login context
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -50,7 +53,21 @@ function Signup() {
         password: formData.password,
         role: data || 'Attendee',
       });
+
       alert(res.data.message);
+
+      const user = {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        role: data || 'Attendee',
+      };
+
+      login(user); // ✅ update context
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userName', user.name);
+      localStorage.setItem('userRole', user.role);
+
+      navigate('/');
     } catch (err) {
       alert('Signup failed');
     }
@@ -88,10 +105,10 @@ function Signup() {
             <Form.Control
               required
               type="text"
-              placeholder="First name"
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
+              placeholder="First name"
               isValid={isValid("firstName")}
               isInvalid={touchedFields.firstName && !isValid("firstName")}
             />
@@ -104,10 +121,10 @@ function Signup() {
             <Form.Control
               required
               type="text"
-              placeholder="Last name"
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
+              placeholder="Last name"
               isValid={isValid("lastName")}
               isInvalid={touchedFields.lastName && !isValid("lastName")}
             />
@@ -120,12 +137,12 @@ function Signup() {
             <InputGroup hasValidation>
               <InputGroup.Text>@</InputGroup.Text>
               <Form.Control
+                required
                 type="text"
-                placeholder="Username"
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                required
+                placeholder="Username"
                 isValid={isValid("username")}
                 isInvalid={touchedFields.username && !isValid("username")}
               />
@@ -141,10 +158,10 @@ function Signup() {
             <Form.Control
               required
               type="email"
-              placeholder="Email"
               name="email"
               value={formData.email}
               onChange={handleChange}
+              placeholder="Email"
               isValid={isValid("email")}
               isInvalid={touchedFields.email && !isValid("email")}
             />
@@ -157,10 +174,10 @@ function Signup() {
             <Form.Control
               required
               type="password"
-              placeholder="Password"
               name="password"
               value={formData.password}
               onChange={handleChange}
+              placeholder="Password"
               isValid={isValid("password")}
               isInvalid={touchedFields.password && !isValid("password")}
             />
@@ -174,10 +191,10 @@ function Signup() {
             <Form.Label>Affiliation</Form.Label>
             <Form.Control
               type="text"
-              placeholder="Affiliation"
               name="affiliation"
               value={formData.affiliation}
               onChange={handleChange}
+              placeholder="Affiliation"
               isValid={isValid("affiliation")}
               isInvalid={touchedFields.affiliation && !isValid("affiliation")}
             />
