@@ -1,28 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Card, Button, Container, Row, Col, Form, Modal } from "react-bootstrap";
+import { useEvents } from './EventsContext'; // ✅ Event context
+import { useUser } from './UserContext';     // ✅ User context
 
 const Events = () => {
   const placeholderImage = "/images/stock.jpg";
-  const [events, setEvents] = useState([
-    { id: 1, title: "Conference", startDate: "2025-04-15", endDate: "2025-04-17", image: "/images/logo192.png", organizers: ["organizer1@example.com"] , price: 9.99 },
-    { id: 2, title: "Workshop", startDate: "2025-05-10", endDate: "2025-05-12", image: "/images/logo512.png", organizers: ["organizer2@example.com"], price: 2.99 },
-    { id: 3, title: "Seminar", startDate: "2025-06-20", endDate: "2025-06-21", image: "", organizers: ["organizer3@example.com"], price: 4.99 },
-  ]);
-  
+  const { events, setEvents } = useEvents();
+  const { user } = useUser(); // ✅ Get logged-in user
+  const currentUser = user.email;
+
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
-  const [eventData, setEventData] = useState({ title: "", startDate: "", endDate: "", organizers: "" });
+  const [eventData, setEventData] = useState({ title: "", startDate: "", endDate: "", organizers: "", price: "" });
   const [dateError, setDateError] = useState("");
-  const [currentUser] = useState("organizer1@example.com");
   const navigate = useNavigate();
 
   const handleShow = (event = null) => {
     setEditingEvent(event);
-    setEventData(event ? { ...event, organizers: event.organizers.join(", ") } : { title: "", startDate: "", endDate: "", organizers: "" });
+    setEventData(event ? { ...event, organizers: event.organizers.join(", ") } : { title: "", startDate: "", endDate: "", organizers: "", price: "" });
     setShowModal(true);
   };
-  
+
   const handleClose = () => {
     setShowModal(false);
     setDateError("");
@@ -53,7 +52,9 @@ const Events = () => {
       id: editingEvent ? editingEvent.id : events.length + 1,
       image: editingEvent ? editingEvent.image : placeholderImage,
       organizers: eventData.organizers.split(",").map(email => email.trim()).filter(Boolean),
-      price: parseFloat(eventData.price) || 0, 
+      price: parseFloat(eventData.price) || 0,
+      attendeesCount: editingEvent ? editingEvent.attendeesCount : 0,
+      revenue: editingEvent ? editingEvent.revenue : 0,
     };
 
     if (editingEvent) {
@@ -67,8 +68,87 @@ const Events = () => {
 
   return (
     <Container className="mt-4">
-      <Button variant="success" className="mb-3" onClick={() => handleShow()}>Add Event</Button>
-      
+      <div className="d-flex mb-4">
+        <Button
+          variant="success"
+          onClick={() => handleShow()}
+          style={{
+            backgroundColor: "#A7C7E7",
+            border: "none",
+            color: "#fff",
+            fontWeight: "bold"
+          }}
+        >
+          Add Event
+        </Button>
+
+        <Button
+          variant="info"
+          className="ms-3"
+          onClick={() => navigate('/analytics')}
+          style={{
+            backgroundColor: "#CBAACB",
+            border: "none",
+            color: "#fff",
+            fontWeight: "bold"
+          }}
+        >
+          View Analytics
+        </Button>
+      </div>
+
+      <Row className="g-4 justify-content-center">
+        {events.map((event) => (
+          <Col key={event.id} md={6} lg={3} className="d-flex" style={{ maxWidth: "320px" }}>
+            <Card
+              className="w-100 shadow-sm p-3"
+              style={{
+                backgroundColor: "#fef9ff",
+                borderRadius: "16px",
+                border: "1px solid #e0d4f7"
+              }}
+            >
+              <Card.Img
+                variant="top"
+                src={event.image || placeholderImage}
+                alt={event.title}
+                style={{ height: "150px", objectFit: "cover", borderRadius: "10px" }}
+              />
+              <Card.Body>
+                <Card.Title style={{ color: "#7a5195" }}>{event.title}</Card.Title>
+                <Card.Text style={{ color: "#555" }}>
+                  {event.startDate} - {event.endDate}
+                </Card.Text>
+                <Card.Text>
+                  <small className="text-muted">Organizers: {event.organizers.join(", ")}</small>
+                </Card.Text>
+                <Card.Text>
+                  <strong>Attendees:</strong> {event.attendeesCount} <br />
+                  <strong>Revenue:</strong> ${event.revenue.toFixed(2)}
+                </Card.Text>
+                <Button
+                  variant="info"
+                  className="me-2"
+                  style={{ backgroundColor: "#CBAACB", border: "none", color: "#fff" }}
+                  onClick={() => navigate(`/event/${event.id}`, { state: event })}
+                >
+                  View
+                </Button>
+                {event.organizers.includes(currentUser) && (
+                  <Button
+                    variant="warning"
+                    style={{ backgroundColor: "#FFB5A7", border: "none", color: "#fff" }}
+                    onClick={() => handleShow(event)}
+                  >
+                    Edit
+                  </Button>
+                )}
+              </Card.Body>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
       <Modal show={showModal} onHide={handleClose}>
         <Modal.Header closeButton>
           <Modal.Title>{editingEvent ? "Edit Event" : "Add New Event"}</Modal.Title>
@@ -93,56 +173,26 @@ const Events = () => {
               <Form.Control type="text" name="organizers" value={eventData.organizers} onChange={handleChange} required />
             </Form.Group>
             <Form.Group className="mb-3">
-            <Form.Label>Price ($)</Form.Label>
-            <Form.Control 
-              type="number" 
-              name="price" 
-              min="0" 
-              step="0.01" 
-              value={eventData.price || ""} 
-              onChange={handleChange} 
-              required 
-            />
-          </Form.Group>
+              <Form.Label>Price ($)</Form.Label>
+              <Form.Control
+                type="number"
+                name="price"
+                min="0"
+                step="0.01"
+                value={eventData.price || ""}
+                onChange={handleChange}
+                required
+              />
+            </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose}>Close</Button>
-          <Button variant="primary" onClick={handleSaveEvent} disabled={dateError}>{editingEvent ? "Save Changes" : "Add Event"}</Button>
+          <Button variant="primary" onClick={handleSaveEvent} disabled={dateError}>Save</Button>
         </Modal.Footer>
       </Modal>
-
-      <Row className="g-3 justify-content-center">
-        {events.map((event) => (
-          <Col key={event.id} md={6} lg={3} className="d-flex" style={{ maxWidth: "320px" }}>
-            <Card className="w-100 shadow-sm p-3">
-              <Card.Img 
-                variant="top" 
-                src={event.image ? event.image : placeholderImage} 
-                alt={event.title} 
-                style={{ height: "150px", objectFit: "cover" }} 
-              />
-              <Card.Body>
-                <Card.Title>{event.title}</Card.Title>
-                <Card.Text>{event.startDate} - {event.endDate}</Card.Text>
-                <Card.Text><small className="text-muted">Organizers: {event.organizers.join(", ")}</small></Card.Text>
-                <Button 
-                  variant="info" 
-                  className="me-2" 
-                  onClick={() => navigate(`/event/${event.id}`, { state: event })}
-                >
-                  View Details
-                </Button>
-                {event.organizers.includes(currentUser) && (
-                  <Button variant="warning" onClick={() => handleShow(event)}>Edit Event</Button>
-                )}
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
     </Container>
   );
-} 
+};
 
 export default Events;

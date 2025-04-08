@@ -8,7 +8,7 @@ const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { userBalance, deductBalance } = useUser();
-  
+
   const [event, setEvent] = useState(location.state?.event || null);
   const [loading, setLoading] = useState(!event);
   const [processing, setProcessing] = useState(false);
@@ -16,14 +16,10 @@ const PaymentPage = () => {
   const [error, setError] = useState('');
   const [showStripe, setShowStripe] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('credit');
-  const [cardNumber, setCardNumber] = useState('');
-  
   useEffect(() => {
     if (!event && eventId) {
-
       setLoading(true);
       setTimeout(() => {
-        // Mock API
         const mockEvent = {
           id: parseInt(eventId),
           title: "Sample Event",
@@ -55,7 +51,7 @@ const PaymentPage = () => {
     }
 
     setProcessing(true);
-        setTimeout(() => {
+    setTimeout(() => {
       deductBalance(event.price);
       setProcessing(false);
       setPaymentSuccess(true);
@@ -68,7 +64,6 @@ const PaymentPage = () => {
 
   const mockStripePayment = (success) => {
     setProcessing(true);
-    
     setTimeout(() => {
       setProcessing(false);
       if (success) {
@@ -78,6 +73,24 @@ const PaymentPage = () => {
       }
       setShowStripe(false);
     }, 1500);
+  };
+
+  const pastelBox = {
+    backgroundColor: '#fff8f0',
+    borderRadius: '20px',
+    padding: '2rem',
+    boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.05)'
+  };
+
+  const pastelHeader = {
+    color: '#A267AC',
+    fontWeight: 'bold'
+  };
+
+  const pastelPrice = {
+    color: '#5885AF',
+    fontSize: '2rem',
+    fontWeight: 'bold'
   };
 
   if (loading) {
@@ -93,25 +106,21 @@ const PaymentPage = () => {
   if (paymentSuccess) {
     return (
       <Container className="mt-5">
-        <Card className="shadow p-4 text-center">
+        <Card style={pastelBox} className="text-center">
           <Card.Body>
             <div className="mb-4 text-success">
               <i className="bi bi-check-circle-fill" style={{ fontSize: '3rem' }}></i>
             </div>
-            <Card.Title as="h2">Payment Successful!</Card.Title>
+            <Card.Title as="h2" style={pastelHeader}>Payment Successful!</Card.Title>
             <Card.Text>
               Thank you for registering for <strong>{event.title}</strong>.
-              {userBalance !== undefined && (
-                <div className="mt-2">
-                  Your remaining balance: <strong>${userBalance.toFixed(2)}</strong>
-                </div>
-              )}
+              <div className="mt-2">
+                Remaining balance: <strong>${userBalance.toFixed(2)}</strong>
+              </div>
             </Card.Text>
             <Button 
-              variant="primary" 
-              onClick={() => navigate(`/event/${event.id}`, { 
-                state: event // Pass the full event object, not { event }
-              })}
+              style={{ backgroundColor: '#A7C7E7', border: 'none' }} 
+              onClick={() => navigate(`/event/${event.id}`)}
             >
               View Event Details
             </Button>
@@ -123,9 +132,9 @@ const PaymentPage = () => {
 
   return (
     <Container className="mt-4">
-      <h2>Payment for Event Registration</h2>
+      <h2 style={pastelHeader}>Payment for Event Registration</h2>
       
-      <Card className="mb-4 shadow-sm">
+      <Card className="mb-4" style={pastelBox}>
         <Card.Body>
           <Row>
             <Col md={8}>
@@ -138,9 +147,7 @@ const PaymentPage = () => {
               </Card.Text>
             </Col>
             <Col md={4} className="text-md-end">
-              <h3 className="text-primary">
-                ${typeof event.price === 'number' ? event.price.toFixed(2) : '0.00'}
-              </h3>
+              <div style={pastelPrice}>${event.price.toFixed(2)}</div>
               <small className="text-muted">Registration fee</small>
             </Col>
           </Row>
@@ -149,7 +156,7 @@ const PaymentPage = () => {
 
       {error && <Alert variant="danger">{error}</Alert>}
 
-      <Card className="mb-4 shadow-sm">
+      <Card className="mb-4" style={pastelBox}>
         <Card.Body>
           <h4>Payment Options</h4>
           
@@ -158,11 +165,11 @@ const PaymentPage = () => {
             <p>Current balance: <strong>${userBalance.toFixed(2)}</strong></p>
             {userBalance >= event.price ? (
               <Button 
-                variant="success" 
+                style={{ backgroundColor: '#CBAACB', border: 'none' }} 
                 onClick={handlePayWithBalance}
                 disabled={processing}
               >
-                {processing ? 'Processing...' : `Pay $${event.price.toFixed(2)} from my balance`}
+                {processing ? 'Processing...' : `Pay $${event.price.toFixed(2)} from balance`}
               </Button>
             ) : (
               <Alert variant="warning">
@@ -175,7 +182,7 @@ const PaymentPage = () => {
             <h5>Option 2: Pay with Stripe</h5>
             {!showStripe ? (
               <Button 
-                variant="primary" 
+                style={{ backgroundColor: '#A7C7E7', border: 'none' }} 
                 onClick={handleStripePayment}
                 disabled={processing}
               >
@@ -183,15 +190,13 @@ const PaymentPage = () => {
                 Pay with Stripe
               </Button>
             ) : (
-              <Card className="p-3 border mb-3">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h6 className="mb-0">Secure Checkout</h6>
-                  <img 
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/512px-Stripe_Logo%2C_revised_2016.svg.png" 
-                    alt="Stripe" 
-                    height="25" 
-                  />
-                </div>
+              <Card className="p-3 border" style={{ backgroundColor: '#fdf6ff' }}>
+                <h6>Stripe Test Mode</h6>
+                <p>Use any of these test card numbers:</p>
+                <ul>
+                  <li>Success: 4242 4242 4242 4242</li>
+                  <li>Failure: 4000 0000 0000 0002</li>
+                </ul>
                 
                 <Form>
                   <Form.Group className="mb-3">
@@ -248,78 +253,36 @@ const PaymentPage = () => {
                       </Form.Group>
                     </Col>
                   </Row>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Cardholder Name</Form.Label>
-                    <Form.Control type="text" placeholder="Name on card" />
-                  </Form.Group>
-                  
-                  <div className="d-flex align-items-center mb-3">
-                    <div className="me-3">
-                      <Form.Check 
-                        type="radio"
-                        id="credit-card"
-                        name="paymentMethod"
-                        label="Credit Card"
-                        checked={paymentMethod === 'credit'}
-                        onChange={() => setPaymentMethod('credit')}
-                      />
-                    </div>
-                    <div>
-                      <Form.Check 
-                        type="radio"
-                        id="debit-card"
-                        name="paymentMethod"
-                        label="Debit Card"
-                        checked={paymentMethod === 'debit'}
-                        onChange={() => setPaymentMethod('debit')}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="d-flex align-items-center">
-                    <Button 
-                      variant="primary" 
-                      className="me-2 flex-grow-1"
-                      onClick={() => {
-                        // Check if using the failure test card
-                        const cleanCardNumber = cardNumber.replace(/\s/g, '');
-                        const isFailureCard = cleanCardNumber === '4000000000000002';
-                        mockStripePayment(!isFailureCard);
-                      }}
-                      disabled={processing}
-                    >
-                      {processing ? (
-                        <>
-                          <Spinner 
-                            as="span"
-                            animation="border"
-                            size="sm"
-                            role="status"
-                            aria-hidden="true"
-                            className="me-2"
-                          />
-                          Processing...
-                        </>
-                      ) : (
-                        <>Pay ${event.price.toFixed(2)} securely</>
-                      )}
-                    </Button>
-                    <Button 
-                      variant="outline-secondary" 
-                      onClick={() => setShowStripe(false)}
-                      disabled={processing}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                  
-                  <div className="mt-3 text-center">
-                    <small className="text-muted">
-                      <i className="bi bi-shield-lock me-1"></i>
-                      Your payment information is secure and encrypted
-                    </small>
-                  </div>
+                  <Form.Check 
+                    type="radio"
+                    id="credit-card"
+                    name="paymentMethod"
+                    label="Credit Card"
+                    checked={paymentMethod === 'credit'}
+                    onChange={() => setPaymentMethod('credit')}
+                  />
+                  <Form.Check 
+                    type="radio"
+                    id="debit-card"
+                    name="paymentMethod"
+                    label="Debit Card"
+                    checked={paymentMethod === 'debit'}
+                    onChange={() => setPaymentMethod('debit')}
+                  />
+                  <Button 
+                    variant="success" 
+                    className="me-2 mt-3"
+                    onClick={() => mockStripePayment(true)}
+                  >
+                    Submit Success Test
+                  </Button>
+                  <Button 
+                    variant="warning" 
+                    className="mt-3"
+                    onClick={() => mockStripePayment(false)}
+                  >
+                    Submit Failure Test
+                  </Button>
                 </Form>
               </Card>
             )}
