@@ -1,21 +1,30 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom"; // Updated import
+import { useLocation, useNavigate } from "react-router-dom";
 import { Container, Card, Button, Modal, Form, ListGroup } from "react-bootstrap";
 import { useUser } from './UserContext';
 
 const EventDetails = () => {
   const location = useLocation();
-  const navigate = useNavigate(); // Added navigate
-  const [event, setEvent] = useState({ 
-    ...location.state, 
-    organizers: Array.isArray(location.state.organizers) ? location.state.organizers : [],
-    sessions: location.state.sessions || []
+  const navigate = useNavigate();
+  
+ const eventData = location.state || { 
+    title: "Event Not Found", 
+    startDate: "", 
+    endDate: "", 
+    organizers: [], 
+    sessions: [], 
+    price: 0
+  };
+  
+  const [event, setEvent] = useState({
+    ...eventData,
+    organizers: eventData.organizers || [],
+    sessions: eventData.sessions || [] 
   });
   
   const [showModal, setShowModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [editingSessionIndex, setEditingSessionIndex] = useState(null);
-  const [eventData, setEventData] = useState(event);
   const [newSession, setNewSession] = useState({ title: "", description: "", date: "", location: "", isOnline: false });
   
   const { userBalance } = useUser();
@@ -41,14 +50,14 @@ const EventDetails = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEventData({
-      ...eventData,
+    setEvent((prevEvent) => ({
+      ...prevEvent,
       [name]: name === "organizers" ? value.split(",").map(email => email.trim()) : value,
-    });
+    }));
   };
 
   const handleSave = () => {
-    setEvent(eventData);
+    setEvent(event);
     handleClose();
   };
 
@@ -59,7 +68,7 @@ const EventDetails = () => {
 
   const handleAddOrEditSession = () => {
     setEvent((prevEvent) => {
-      const updatedSessions = [...prevEvent.sessions];
+      const updatedSessions = [...(prevEvent.sessions || [])];
       if (editingSessionIndex !== null) {
         updatedSessions[editingSessionIndex] = newSession;
       } else {
@@ -73,11 +82,9 @@ const EventDetails = () => {
   const handleDeleteSession = (index) => {
     setEvent((prevEvent) => ({
       ...prevEvent,
-      sessions: prevEvent.sessions.filter((_, i) => i !== index)
+      sessions: (prevEvent.sessions || []).filter((_, i) => i !== index)
     }));
   };
-
-  console.log("Event Image URL:", event.image);
 
   return (
     <Container className="mt-4">
@@ -94,20 +101,24 @@ const EventDetails = () => {
           <Card.Text>Organizers: {Array.isArray(event.organizers) ? event.organizers.join(", ") : "No organizers"}</Card.Text>
           <Button variant="warning" onClick={handleShow}>Edit Event</Button>
           <Button variant="success" className="ms-2" onClick={() => handleSessionShow()}>Add Session</Button>
-          <Button 
-            variant="primary" 
-            className="ms-2" 
-            onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
-          >
-            Register (${event.price ? event.price.toFixed(2) : '0.00'})
-          </Button>
+          
+          {/* Only show Register button if price exists and is greater than 0 */}
+          {event.price && event.price > 0 && (
+            <Button 
+              variant="primary" 
+              className="ms-2" 
+              onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
+            >
+              Register (${event.price.toFixed(2)})
+            </Button>
+          )}
         </Card.Body>
       </Card>
 
       <h4 className="mt-4">Sessions</h4>
       <ListGroup>
-        {event.sessions.length > 0 ? (
-          event.sessions.map((session, index) => (
+        {(event.sessions || []).length > 0 ? (
+          (event.sessions || []).map((session, index) => (
             <ListGroup.Item key={index} className="border rounded p-3 mb-2">
               <h5>{session.title}</h5>
               <p>{session.description}</p>
@@ -131,19 +142,25 @@ const EventDetails = () => {
           <Form>
             <Form.Group className="mb-3">
               <Form.Label>Title</Form.Label>
-              <Form.Control type="text" name="title" value={eventData.title} onChange={handleChange} required />
+              <Form.Control type="text" name="title" value={event.title} onChange={handleChange} required />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Start Date</Form.Label>
-              <Form.Control type="date" name="startDate" value={eventData.startDate} onChange={handleChange} required />
+              <Form.Control type="date" name="startDate" value={event.startDate} onChange={handleChange} required />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>End Date</Form.Label>
-              <Form.Control type="date" name="endDate" value={eventData.endDate} onChange={handleChange} required />
+              <Form.Control type="date" name="endDate" value={event.endDate} onChange={handleChange} required />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Organizer Emails (comma-separated)</Form.Label>
-              <Form.Control type="text" name="organizers" value={eventData.organizers.join(", ")} onChange={handleChange} required />
+              <Form.Control 
+                type="text" 
+                name="organizers" 
+                value={(event.organizers || []).join(", ")} 
+                onChange={handleChange} 
+                required 
+              />
             </Form.Group>
           </Form>
         </Modal.Body>
