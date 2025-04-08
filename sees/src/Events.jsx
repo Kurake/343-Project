@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, Button, Container, Row, Col, Form, Modal } from "react-bootstrap";
 import { useEvents } from './EventsContext'; // ✅ Event context
 import { useUser } from './UserContext';     // ✅ User context
+import axios from "axios";
 
 const Events = () => {
   const placeholderImage = "/images/stock.jpg";
@@ -41,29 +42,41 @@ const Events = () => {
     }
   };
 
-  const handleSaveEvent = () => {
-    if (eventData.startDate > eventData.endDate) {
-      setDateError("Start date must be before or equal to the end date.");
+  const handleSaveEvent = async () => {
+    const { title, startDate, endDate, organizers, price } = eventData;
+  
+    if (new Date(startDate) > new Date(endDate)) {
+      setDateError("Start date cannot be after end date");
       return;
     }
-
-    const updatedEvent = {
-      ...eventData,
-      id: editingEvent ? editingEvent.id : events.length + 1,
-      image: editingEvent ? editingEvent.image : placeholderImage,
-      organizers: eventData.organizers.split(",").map(email => email.trim()).filter(Boolean),
-      price: parseFloat(eventData.price) || 0,
-      attendeesCount: editingEvent ? editingEvent.attendeesCount : 0,
-      revenue: editingEvent ? editingEvent.revenue : 0,
+  
+    const eventPayload = {
+      title,
+      startDate,
+      endDate,
+      price: parseFloat(price),
     };
-
-    if (editingEvent) {
-      setEvents(events.map(event => (event.id === editingEvent.id ? updatedEvent : event)));
-    } else {
-      setEvents([...events, updatedEvent]);
+  
+    try {
+      if (editingEvent) {
+        // Edit mode — send PUT request
+        const response = await axios.put(`http://localhost:3001/api/events/${editingEvent.id}`, eventPayload);
+        const updatedEvent = response.data;
+        setEvents(prev =>
+          prev.map(event => (event.id === updatedEvent.id ? updatedEvent : event))
+        );
+      } else {
+        // Create mode — send POST request
+        const response = await axios.post('http://localhost:3001/api/events', eventPayload);
+        const newEvent = response.data;
+        setEvents(prev => [...prev, newEvent]);
+      }
+  
+      handleClose();
+    } catch (error) {
+      console.error("Error saving event:", error);
+      // You could also show an alert or toast here
     }
-
-    handleClose();
   };
 
   return (
