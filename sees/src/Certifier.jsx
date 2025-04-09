@@ -7,9 +7,11 @@ import { useUser } from './UserContext';     // ✅ User context
 
 function Certifier() {
   return (
-      <div className="app">
-        <p>Placeholder for some really cool certification code that will DEFINITELY go in here, trust</p>
-      </div>
+    <Container className="mt-4">
+      <Card style={pastelBox}>
+        Would you like to certify all users associated with this event?
+      </Card>
+    </Container>
   );
 } 
 

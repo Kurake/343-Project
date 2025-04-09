@@ -12,6 +12,8 @@ const pastelBox = {
 };
 
 const EventDetails = () => {
+  const { user } = useUser();
+  const userRole = user.role;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -191,6 +193,16 @@ const EventDetails = () => {
               onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
             >
               Register (${event.price ? event.price.toFixed(2) : '0.00'})
+            </Button>
+          )}
+          {/*If the account is an organizer account, allow certification distribution*/}
+          {userRole === 'organizer' && (
+            <Button 
+              variant="primary" 
+              className="ms-2" 
+              onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
+            >
+              Send Certifications
             </Button>
           )}
         </Card.Body>
