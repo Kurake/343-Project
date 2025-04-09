@@ -456,6 +456,107 @@ app.get("/api/users/emails", async (req, res) => {
     }
 });
 
+app.post('/api/events/:eventId/sessions', async (req, res) => {
+    try {
+      const { eventId } = req.params;
+      const { title, description, date, location, online } = req.body;
+  
+      // Insert the new session into the EventSessions table
+      const query = `
+        INSERT INTO eventsession (eventid, title, description, date, location, online)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *;`;
+
+      const values = [eventId, title, description, date, location, online === true || online === 'true'];
+      const result = await pool.query(query, values);
+
+      const newSession = result.rows[0]; // The newly added session
+
+      // Respond with the newly added session
+      res.status(201).json(newSession);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error adding session' });
+    }
+});
+
+// PUT /api/events/:eventId/sessions/:sessionId - Update an existing session
+app.put('/api/events/:eventId/sessions/:sessionId', async (req, res) => {
+    try {
+      const { eventId, sessionId } = req.params;
+      const { title, description, date, location, online } = req.body;
+  
+      // Update the session in the EventSessions table
+      const query = `
+        UPDATE EventSession
+        SET title = $1, description = $2, date = $3, location = $4, online = $5
+        WHERE eventid = $6 AND sessionid = $7
+        RETURNING *;
+      `;
+      const values = [title, description, date, location, online === true || online === 'true', eventId, sessionId];
+  
+      const result = await pool.query(query, values);
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: 'Session not found' });
+      }
+  
+      res.status(200).json(result.rows[0]); // Respond with the updated session
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error updating session' });
+    }
+});
+
+// GET /api/events/:eventId/sessions
+app.get('/api/events/:eventId/sessions', async (req, res) => {
+    try {
+      const { eventId } = req.params;
+  
+      // Fetch sessions for the specific event
+      const query = 'SELECT * FROM EventSession WHERE eventid = $1';
+      const result = await pool.query(query, [eventId]);
+  
+      // Transformer function to reformat the data
+      const sessions = result.rows.map(session => ({
+        sessionid: session.sessionid,
+        title: session.title,
+        description: session.description,
+        date: new Date(session.date).toISOString().split('T')[0],
+        location: session.location,
+        online: session.online === true || session.online === 'true',  // We map 'online' to 'online' in the response
+        eventId: session.eventid    // Ensure eventId comes last
+      }));
+  
+      // Respond with the reformatted list of sessions
+      res.status(200).json(sessions);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error fetching sessions' });
+    }
+  });
+
+// DELETE /api/events/:eventId/sessions/:sessionId
+app.delete('/api/events/:eventId/sessions/:sessionId', async (req, res) => {
+    try {
+      const { sessionId, eventId } = req.params;
+  
+      // Delete the session from the EventSessions table
+      const query = 'DELETE FROM EventSession WHERE sessionid = $1 AND eventid = $2 RETURNING *';
+      const result = await pool.query(query, [sessionId, eventId]);
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: 'Session not found' });
+      }
+  
+      // Respond with the deleted session details
+      res.status(200).json(result.rows[0]);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error deleting session' });
+    }
+});
+
 app.listen(3001, () => {
   console.log('✅ Server running on http://localhost:3001');
 });

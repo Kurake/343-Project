@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Container, Card, Button, Modal, Form, ListGroup } from "react-bootstrap";
 import { useUser } from './UserContext';
 import axios from "axios";
-import Select from 'react-select';
 
 const pastelBox = {
   backgroundColor: "#FDF6F0",
@@ -23,7 +22,7 @@ const EventDetails = () => {
 
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [editingSessionIndex, setEditingSessionIndex] = useState(null);
-  const [newSession, setNewSession] = useState({ title: "", description: "", date: "", location: "", isOnline: false });
+  const [newSession, setNewSession] = useState({ title: "", description: "", date: "", location: "", online: false });
   const [allUsers, setAllUsers] = useState([]);
 
   const { userBalance } = useUser();
@@ -33,7 +32,7 @@ const EventDetails = () => {
     if (index !== null) {
       setNewSession(event.sessions[index]);
     } else {
-      setNewSession({ title: "", description: "", date: "", location: "", isOnline: false });
+      setNewSession({ title: "", description: "", date: "", location: "", online: false });
     }
     setShowSessionModal(true);
   };
@@ -41,7 +40,7 @@ const EventDetails = () => {
   const handleSessionClose = () => {
     setShowSessionModal(false);
     setEditingSessionIndex(null);
-    setNewSession({ title: "", description: "", date: "", location: "", isOnline: false });
+    setNewSession({ title: "", description: "", date: "", location: "", online: false });
   };
 
   const handleSessionChange = (e) => {
@@ -49,24 +48,47 @@ const EventDetails = () => {
     setNewSession({ ...newSession, [name]: type === "checkbox" ? checked : value });
   };
 
-  const handleAddOrEditSession = () => {
-    setEvent((prevEvent) => {
-      const updatedSessions = [...prevEvent.sessions];
+  const handleAddOrEditSession = async () => {
+    try {
+      const sessionData = { ...newSession };
+      const url = `http://localhost:3001/api/events/${event.id}/sessions`;
+  
+      // If editing an existing session, send PUT request
       if (editingSessionIndex !== null) {
-        updatedSessions[editingSessionIndex] = newSession;
+        await axios.put(`${url}/${event.sessions[editingSessionIndex].sessionid}`, sessionData);
       } else {
-        updatedSessions.push(newSession);
+        // Add new session by sending POST request
+        await axios.post(url, sessionData);
       }
-      return { ...prevEvent, sessions: updatedSessions };
-    });
-    handleSessionClose();
+  
+      // After adding or editing session, fetch updated session list
+      fetchSessions();  // <-- This is the new call to fetch updated sessions
+      handleSessionClose();  // Close the modal after saving
+    } catch (error) {
+      console.error('Error saving session:', error);
+    }
   };
 
-  const handleDeleteSession = (index) => {
-    setEvent((prevEvent) => ({
-      ...prevEvent,
-      sessions: prevEvent.sessions.filter((_, i) => i !== index)
-    }));
+  const handleDeleteSession = async (index) => {
+    try {
+      const sessionId = event.sessions[index].sessionid;
+      await axios.delete(`http://localhost:3001/api/events/${event.id}/sessions/${sessionId}`);
+      fetchSessions(); // <-- Fetch updated session list after deletion
+    } catch (error) {
+      console.error('Error deleting session:', error);
+    }
+  };
+
+  const fetchSessions = async () => {
+    try {
+      const response = await axios.get(`http://localhost:3001/api/events/${event.id}/sessions`);
+      setEvent((prevEvent) => ({
+        ...prevEvent,
+        sessions: response.data,  // Update the sessions in the state
+      }));
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    }
   };
 
   useEffect(() => {
@@ -82,9 +104,10 @@ const EventDetails = () => {
         console.error('Error fetching users:', error);
       }
     };
-
+  
     fetchUsers();
-  }, []);
+    fetchSessions();  // <-- This is the call to fetch sessions initially
+  }, [event.id]);  // <-- It will run again when event.id changes
 
   return (
     <Container className="mt-4">
@@ -119,7 +142,7 @@ const EventDetails = () => {
               <p>{session.description}</p>
               <p><strong>Date:</strong> {session.date}</p>
               <p><strong>Location:</strong> {session.location}</p>
-              <p><strong>Mode:</strong> {session.isOnline ? "Online" : "In-Person"}</p>
+              <p><strong>Mode:</strong> {session.online ? "Online" : "In-Person"}</p>
               <Button variant="primary" className="me-2" onClick={() => handleSessionShow(index)}>Edit</Button>
               <Button variant="danger" onClick={() => handleDeleteSession(index)}>Delete</Button>
             </ListGroup.Item>
@@ -152,7 +175,7 @@ const EventDetails = () => {
               <Form.Label>Location</Form.Label>
               <Form.Control type="text" name="location" value={newSession.location} onChange={handleSessionChange} required />
             </Form.Group>
-            <Form.Check type="checkbox" label="Online Session" name="isOnline" checked={newSession.isOnline} onChange={handleSessionChange} />
+            <Form.Check type="checkbox" label="Online Session" name="online" checked={newSession.online} onChange={handleSessionChange} />
           </Form>
         </Modal.Body>
         <Modal.Footer>
