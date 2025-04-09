@@ -1,5 +1,6 @@
 // src/EventsContext.jsx
-import React, { createContext, useContext, useState } from 'react';
+import React, { useEffect, createContext, useContext, useState } from 'react';
+import axios from "axios";
 
 const EventsContext = createContext();
 
@@ -39,6 +40,41 @@ export const EventsProvider = ({ children }) => {
       revenue: 299.40,
     },
   ]);
+
+  const [loading, setLoading] = useState(true);     // Make sure this is declared
+  const [error, setError] = useState(null); 
+
+  const transformEvents = (data) => {
+    return data.map(event => ({
+      id: event.EventID,
+      title: event.Title,
+      startDate: event.StartDate.split('T')[0], // remove time
+      endDate: event.EndDate.split('T')[0],     // remove time
+      image: "", // You can replace this later
+      organizers: [], // Fill this in if you fetch organizer emails separately
+      price: event.Price,
+      attendeesCount: event.AttendeesCount,
+      revenue: event.Revenue,
+    }));
+  };
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await axios.get("http://localhost:3001/api/events"); // update URL to match your backend
+        const transformed = transformEvents(response.data);
+        console.log(transformed);
+        setEvents(transformed);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   return (
     <EventsContext.Provider value={{ events, setEvents }}>
