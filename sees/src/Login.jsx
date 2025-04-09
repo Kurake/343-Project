@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../src/UserContext';
 import { Form, Button, Container, Alert } from 'react-bootstrap';
+import axios from "axios";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -24,15 +25,17 @@ const Login = () => {
     }
 
     try {
-      const user = {
-        name: formData.email.split('@')[0],
-        email: formData.email,
-        role: 'user',
-        isLoggedIn: true
-      };
-
-      login(user);
-      navigate('/');
+      // Here, instead of directly logging in with static data, we send the credentials to the backend
+      axios
+        .post('http://localhost:3001/api/auth/login', formData)
+        .then((response) => {
+          // If login is successful
+          login(response.data.user); // Update context with user info
+          navigate('/'); // Redirect user to homepage
+        })
+        .catch((err) => {
+          setError("Login failed. Please try again.");
+        });
     } catch (err) {
       setError("Login failed. Please try again.");
     }
