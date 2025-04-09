@@ -332,89 +332,129 @@ io.on('connection', (socket) => {
 });
 
 app.get("/api/events", async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM Event");
-    res.json(result.rows);
-  } catch (err) {
-    console.error("Error fetching events:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
+    try {
+      const result = await pool.query(`
+        SELECT 
+          e.*, 
+          COALESCE(array_agg(u.email) FILTER (WHERE u.email IS NOT NULL), '{}') AS organizers
+        FROM Event e
+        LEFT JOIN eventorganizer eo ON e.eventid = eo.eventid
+        LEFT JOIN "user" u ON eo.userid = u.userid
+        GROUP BY e.eventid
+        ORDER BY e.eventid DESC
+      `);
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/events", async (req, res) => {
+    console.log("Body: ", req.body);
+    const { title, startDate, endDate, price, organizers } = req.body;
+  
+    if (!title || !startDate || !endDate || !price || !organizers || !organizers.length) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+  
+    const client = await pool.connect();
+  
+    try {
+      await client.query('BEGIN');
+  
+      // Insert the event
+      const eventResult = await client.query(
+        `INSERT INTO event (title, startdate, enddate, price, attendeescount, revenue)
+         VALUES ($1, $2, $3, $4, 0, 0) RETURNING *`,
+        [title, startDate, endDate, price]
+      );
+  
+      const newEvent = eventResult.rows[0];
+  
+      // Get user IDs for the given organizer emails
+      const userResult = await client.query(
+        `SELECT userid FROM "user" WHERE email = ANY($1::text[])`,
+        [organizers]
+      );
+  
+      const userIds = userResult.rows.map(row => row.userid);
+  
+      // Insert into EventOrganizer
+      for (const userId of userIds) {
+        await client.query(
+          `INSERT INTO eventorganizer (userid, eventid) VALUES ($1, $2)`,
+          [userId, newEvent.eventid]
+        );
+      }
+  
+      await client.query('COMMIT');
+  
+      res.status(201).json({ ...newEvent, organizers });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error("Create Event Error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    } finally {
+      client.release();
+    }
 });
 
-// // POST: Create a new event
-// app.post("/api/events", async (req, res) => {
-// console.log("Body: ", req.body);
-//   const { title, startDate, endDate, price, organizers } = req.body;
+app.put("/api/events/:id", async (req, res) => {
+    const { title, startDate, endDate, price, organizers } = req.body;
+    const eventId = req.params.id;
 
-//   if (!title || !startDate || !endDate || !price || !organizers?.length) {
-//     return res.status(400).json({ message: "Missing required fields" });
-//   }
+    if (!title || !startDate || !endDate || !price || !organizers) {
+    return res.status(400).json({ message: "Missing required fields" });
+    }
 
-//   try {
-//     const eventResult = await db.query(
-//       `INSERT INTO Event (Title, StartDate, EndDate, Price, AttendeesCount, Revenue)
-//        VALUES ($1, $2, $3, $4, 0, 0) RETURNING *`,
-//       [title, startDate, endDate, price]
-//     );
-//     const newEvent = eventResult.rows[0];
+    try {
+    // Update the Event table
+    await pool.query(
+        `UPDATE Event SET title=$1, startdate=$2, enddate=$3, price=$4 WHERE eventid=$5`,
+        [title, startDate, endDate, price, eventId]
+    );
 
-//     const userResult = await db.query(
-//       `SELECT UserID FROM "User" WHERE Email = ANY($1::text[])`,
-//       [organizers]
-//     );
+    // Remove old organizers
+    await pool.query(
+        `DELETE FROM eventorganizer WHERE eventid=$1`,
+        [eventId]
+    );
 
-//     const userIDs = userResult.rows.map(row => row.userid);
-//     if (userIDs.length !== organizers.length) {
-//       return res.status(400).json({ message: "Some organizer emails not found" });
-//     }
+    // Insert new organizers
+    for (let organizerEmail of organizers) {
+        const { rows } = await pool.query(
+        `SELECT userid FROM "user" WHERE email = $1`, 
+        [organizerEmail]
+        );
+        
+        const userId = rows[0]?.userid;
+        if (userId) {
+        await pool.query(
+            `INSERT INTO eventorganizer (eventid, userid) VALUES ($1, $2)`,
+            [eventId, userId]
+        );
+        }
+    }
 
-//     for (const userId of userIDs) {
-//       await db.query(`INSERT INTO EventOrganizer (UserID, EventID) VALUES ($1, $2)`, [userId, newEvent.eventid]);
-//     }
+    // Send a response indicating success without fetching the updated event
+    res.status(200).json({ message: "Event updated successfully" });
 
-//     res.status(201).json(newEvent);
-//   } catch (err) {
-//     console.error("Create Event Error:", err);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// });
+    } catch (err) {
+    console.error("Update Event Error:", err);
+    res.status(500).json({ message: "Internal server error" });
+    }
+});
 
-// // PUT: Update an event
-// app.put("/api/events/:id", async (req, res) => {
-//   const { title, startDate, endDate, price, organizers } = req.body;
-//   const eventId = req.params.id;
-
-//   if (!title || !startDate || !endDate || !price || !organizers?.length) {
-//     return res.status(400).json({ message: "Missing required fields" });
-//   }
-
-//   try {
-//     await db.query(
-//       `UPDATE Event SET Title=$1, StartDate=$2, EndDate=$3, Price=$4 WHERE EventID=$5`,
-//       [title, startDate, endDate, price, eventId]
-//     );
-
-//     const userResult = await db.query(
-//       `SELECT UserID FROM "User" WHERE Email = ANY($1::text[])`,
-//       [organizers]
-//     );
-//     const userIDs = userResult.rows.map(row => row.userid);
-//     if (userIDs.length !== organizers.length) {
-//       return res.status(400).json({ message: "Some organizer emails not found" });
-//     }
-
-//     await db.query(`DELETE FROM EventOrganizer WHERE EventID = $1`, [eventId]);
-//     for (const userId of userIDs) {
-//       await db.query(`INSERT INTO EventOrganizer (UserID, EventID) VALUES ($1, $2)`, [userId, eventId]);
-//     }
-
-//     const updatedEvent = await db.query(`SELECT * FROM Event WHERE EventID = $1`, [eventId]);
-//     res.json(updatedEvent.rows[0]);
-//   } catch (err) {
-//     console.error("Update Event Error:", err);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// });
+app.get("/api/users/emails", async (req, res) => {
+    try {
+      const result = await pool.query(`SELECT email FROM "user"`);
+      res.json(result.rows.map(row => row.email));
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 app.listen(3001, () => {
   console.log('✅ Server running on http://localhost:3001');

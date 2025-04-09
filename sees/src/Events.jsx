@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Card, Button, Container, Row, Col, Form, Modal } from "react-bootstrap";
 import { useEvents } from './EventsContext'; // ✅ Event context
 import { useUser } from './UserContext';     // ✅ User context
+import Select from 'react-select';
 import axios from "axios";
 
 const Events = () => {
@@ -13,13 +14,33 @@ const Events = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
-  const [eventData, setEventData] = useState({ title: "", startDate: "", endDate: "", organizers: "", price: "" });
+  const [eventData, setEventData] = useState({ title: "", startDate: "", endDate: "", organizers: [], price: "" });
   const [dateError, setDateError] = useState("");
+  const [allUsers, setAllUsers] = useState([]);
   const navigate = useNavigate();
+
+  // Fetch all users (organizers) when modal opens
+  useEffect(() => {
+    // Fetch all users for the dropdown
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get("http://localhost:3001/api/users/emails"); // your endpoint to fetch user emails
+        const users = response.data.map(email => ({ label: email, value: email })); // Prepare user data for dropdown
+        setAllUsers(users); // Update the state with user data
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleShow = (event = null) => {
     setEditingEvent(event);
-    setEventData(event ? { ...event, organizers: event.organizers.join(", ") } : { title: "", startDate: "", endDate: "", organizers: "", price: "" });
+    setEventData(event
+      ? {
+        ...event,
+        organizers: event.organizers.map(email => ({ label: email, value: email })) // Format organizers correctly for react-select
+      } : { title: "", startDate: "", endDate: "", organizers: [], price: "" });
     setShowModal(true);
   };
 
@@ -44,38 +65,39 @@ const Events = () => {
 
   const handleSaveEvent = async () => {
     const { title, startDate, endDate, organizers, price } = eventData;
-  
+
     if (new Date(startDate) > new Date(endDate)) {
       setDateError("Start date cannot be after end date");
       return;
     }
-  
+
     const eventPayload = {
       title,
       startDate,
       endDate,
       price: parseFloat(price),
+      organizers: organizers.map(user => user.value),
     };
-  
+
     try {
       if (editingEvent) {
         // Edit mode — send PUT request
-        const response = await axios.put(`http://localhost:3001/api/events/${editingEvent.id}`, eventPayload);
-        const updatedEvent = response.data;
-        setEvents(prev =>
-          prev.map(event => (event.id === updatedEvent.id ? updatedEvent : event))
-        );
+        await axios.put(`http://localhost:3001/api/events/${editingEvent.id}`, eventPayload);
+
+        // Update the event in the state (no need to fetch again)
+        setEvents(prev => prev.map(event => event.id === editingEvent.id ? { ...event, ...eventPayload } : event));
       } else {
         // Create mode — send POST request
-        const response = await axios.post('http://localhost:3001/api/events', eventPayload);
-        const newEvent = response.data;
+        const response = await axios.post("http://localhost:3001/api/events", eventPayload);
+        const newEvent = { ...response.data, id: response.data.eventid };
+
+        // Add the new event to the state
         setEvents(prev => [...prev, newEvent]);
       }
-  
+
       handleClose();
     } catch (error) {
       console.error("Error saving event:", error);
-      // You could also show an alert or toast here
     }
   };
 
@@ -112,7 +134,7 @@ const Events = () => {
 
       <Row className="g-4 justify-content-center">
         {events.map((event) => (
-          <Col key={event.id} md={6} lg={3} className="d-flex" style={{ maxWidth: "320px" }}>
+          <Col key={`${event.id}-${event.title}`} md={6} lg={3} className="d-flex" style={{ maxWidth: "320px" }}>
             <Card
               className="w-100 shadow-sm p-3"
               style={{
@@ -133,7 +155,9 @@ const Events = () => {
                   {event.startDate} - {event.endDate}
                 </Card.Text>
                 <Card.Text>
-                  <small className="text-muted">Organizers: {event.organizers.join(", ")}</small>
+                  <small className="text-muted">
+                    Organizers: {Array.isArray(event.organizers) ? event.organizers.join(", ") : "N/A"}
+                  </small>
                 </Card.Text>
                 <Card.Text>
                   <strong>Attendees:</strong> {event.attendeesCount} <br />
@@ -147,12 +171,11 @@ const Events = () => {
                 >
                   View
                 </Button>
-                {event.organizers.includes(currentUser) && (
+                {Array.isArray(event.organizers) && event.organizers.includes(currentUser) && (
                   <Button
                     variant="warning"
                     style={{ backgroundColor: "#FFB5A7", border: "none", color: "#fff" }}
-                    onClick={() => handleShow(event)}
-                  >
+                    onClick={() => handleShow(event)}>
                     Edit
                   </Button>
                 )}
@@ -182,8 +205,15 @@ const Events = () => {
             </Form.Group>
             {dateError && <p className="text-danger">{dateError}</p>}
             <Form.Group className="mb-3">
-              <Form.Label>Organizer Emails (comma-separated)</Form.Label>
-              <Form.Control type="text" name="organizers" value={eventData.organizers} onChange={handleChange} required />
+              <Form.Label>Organizer Emails (select multiple)</Form.Label>
+              <Select
+                isMulti
+                name="organizers"
+                options={allUsers}
+                value={eventData.organizers}
+                onChange={(selectedOptions) => setEventData(prev => ({ ...prev, organizers: selectedOptions }))} // Updates the state with selected options
+                required
+              />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Price ($)</Form.Label>
