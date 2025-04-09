@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Card, Button, Container, Row, Col, Form, Modal } from "react-bootstrap";
-import { useEvents } from './EventsContext'; // ✅ Event context
-import { useUser } from './UserContext';     // ✅ User context
+import { useEvents } from './EventsContext';
+import { useUser } from './UserContext';
 import axios from "axios";
 
 const Events = () => {
   const placeholderImage = "/images/stock.jpg";
   const { events, setEvents } = useEvents();
-  const { user } = useUser(); // ✅ Get logged-in user
+  const { user } = useUser();
   const currentUser = user.email;
+  const isSponsor = user.role === 'sponsor';
 
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -44,39 +45,49 @@ const Events = () => {
 
   const handleSaveEvent = async () => {
     const { title, startDate, endDate, organizers, price } = eventData;
-  
+
     if (new Date(startDate) > new Date(endDate)) {
       setDateError("Start date cannot be after end date");
       return;
     }
-  
+
     const eventPayload = {
       title,
       startDate,
       endDate,
       price: parseFloat(price),
+      organizers: organizers.split(",").map(e => e.trim()),
+      sponsors: editingEvent?.sponsors || [],
     };
-  
+
     try {
       if (editingEvent) {
-        // Edit mode — send PUT request
         const response = await axios.put(`http://localhost:3001/api/events/${editingEvent.id}`, eventPayload);
         const updatedEvent = response.data;
-        setEvents(prev =>
-          prev.map(event => (event.id === updatedEvent.id ? updatedEvent : event))
-        );
+        setEvents(prev => prev.map(event => (event.id === updatedEvent.id ? updatedEvent : event)));
       } else {
-        // Create mode — send POST request
         const response = await axios.post('http://localhost:3001/api/events', eventPayload);
         const newEvent = response.data;
         setEvents(prev => [...prev, newEvent]);
       }
-  
+
       handleClose();
     } catch (error) {
       console.error("Error saving event:", error);
-      // You could also show an alert or toast here
     }
+  };
+
+  const handleSponsorEvent = (id) => {
+    setEvents(prev =>
+      prev.map(event =>
+        event.id === id
+          ? {
+              ...event,
+              sponsors: event.sponsors ? [...event.sponsors, currentUser] : [currentUser],
+            }
+          : event
+      )
+    );
   };
 
   return (
@@ -85,12 +96,7 @@ const Events = () => {
         <Button
           variant="success"
           onClick={() => handleShow()}
-          style={{
-            backgroundColor: "#A7C7E7",
-            border: "none",
-            color: "#fff",
-            fontWeight: "bold"
-          }}
+          style={{ backgroundColor: "#A7C7E7", border: "none", color: "#fff", fontWeight: "bold" }}
         >
           Add Event
         </Button>
@@ -99,12 +105,7 @@ const Events = () => {
           variant="info"
           className="ms-3"
           onClick={() => navigate('/analytics')}
-          style={{
-            backgroundColor: "#CBAACB",
-            border: "none",
-            color: "#fff",
-            fontWeight: "bold"
-          }}
+          style={{ backgroundColor: "#CBAACB", border: "none", color: "#fff", fontWeight: "bold" }}
         >
           View Analytics
         </Button>
@@ -113,20 +114,8 @@ const Events = () => {
       <Row className="g-4 justify-content-center">
         {events.map((event) => (
           <Col key={event.id} md={6} lg={3} className="d-flex" style={{ maxWidth: "320px" }}>
-            <Card
-              className="w-100 shadow-sm p-3"
-              style={{
-                backgroundColor: "#fef9ff",
-                borderRadius: "16px",
-                border: "1px solid #e0d4f7"
-              }}
-            >
-              <Card.Img
-                variant="top"
-                src={event.image || placeholderImage}
-                alt={event.title}
-                style={{ height: "150px", objectFit: "cover", borderRadius: "10px" }}
-              />
+            <Card className="w-100 shadow-sm p-3" style={{ backgroundColor: "#fef9ff", borderRadius: "16px", border: "1px solid #e0d4f7" }}>
+              <Card.Img variant="top" src={event.image || placeholderImage} alt={event.title} style={{ height: "150px", objectFit: "cover", borderRadius: "10px" }} />
               <Card.Body>
                 <Card.Title style={{ color: "#7a5195" }}>{event.title}</Card.Title>
                 <Card.Text style={{ color: "#555" }}>
@@ -139,23 +128,39 @@ const Events = () => {
                   <strong>Attendees:</strong> {event.attendeesCount} <br />
                   <strong>Revenue:</strong> ${event.revenue.toFixed(2)}
                 </Card.Text>
-                <Button
-                  variant="info"
-                  className="me-2"
-                  style={{ backgroundColor: "#CBAACB", border: "none", color: "#fff" }}
-                  onClick={() => navigate(`/event/${event.id}`, { state: event })}
-                >
-                  View
-                </Button>
-                {event.organizers.includes(currentUser) && (
-                  <Button
-                    variant="warning"
-                    style={{ backgroundColor: "#FFB5A7", border: "none", color: "#fff" }}
-                    onClick={() => handleShow(event)}
-                  >
-                    Edit
-                  </Button>
+                {event.sponsors?.length > 0 && (
+                  <Card.Text>
+                    <strong>Sponsors:</strong> {event.sponsors.join(", ")}
+                  </Card.Text>
                 )}
+
+                {/* Button Row */}
+                <div className="d-flex flex-wrap gap-2 mt-2">
+                  <Button
+                    style={{ backgroundColor: "#CBAACB", border: "none", color: "#fff" }}
+                    onClick={() => navigate(`/event/${event.id}`, { state: event })}
+                  >
+                    View
+                  </Button>
+
+                  {event.organizers.includes(currentUser) && (
+                    <Button
+                      style={{ backgroundColor: "#FFB5A7", border: "none", color: "#fff" }}
+                      onClick={() => handleShow(event)}
+                    >
+                      Edit
+                    </Button>
+                  )}
+
+                  {isSponsor && !(event.sponsors || []).includes(currentUser) && (
+                    <Button
+                      style={{ backgroundColor: "#B5EAD7", border: "none", color: "#2E2E2E" }}
+                      onClick={() => handleSponsorEvent(event.id)}
+                    >
+                      Sponsor
+                    </Button>
+                  )}
+                </div>
               </Card.Body>
             </Card>
           </Col>
@@ -187,15 +192,7 @@ const Events = () => {
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Price ($)</Form.Label>
-              <Form.Control
-                type="number"
-                name="price"
-                min="0"
-                step="0.01"
-                value={eventData.price || ""}
-                onChange={handleChange}
-                required
-              />
+              <Form.Control type="number" name="price" min="0" step="0.01" value={eventData.price || ""} onChange={handleChange} required />
             </Form.Group>
           </Form>
         </Modal.Body>
