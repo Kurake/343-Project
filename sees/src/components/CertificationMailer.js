@@ -8,27 +8,37 @@ var transporter = nodemailer.createTransport({
   }
 });
 
-var mailOptions = {
-  from: 'sees.mailer.daemon@gmail.com',
-  to: 'attendee@mailservice.com',
-  subject: 'Certification from event ', // Add event name to subject before mailing
-  text: 'Heyo broski, sick tricks my dude', // definitely do not call them broski
-  // This is just placeholder text
-  attachments: [
-    {
-        filename: 'file-name.pdf', // Likely rewrite filename with client name and event name
-        path: path.join(__dirname, '../output/file-name.pdf'), // Make sure that the pdf is stored in reachable area
-        contentType: 'application/pdf'
+function sendEmail(email, event, recipientName){
+  // If name is specified, then it's a personalized certificate sent to the user
+  if(recipientName != ""){
+    var mailOptions = {
+      from: 'sees.mailer.daemon@gmail.com',
+      to: email,
+      subject: 'Certification from event ' + event,
+      text: 'Hello ' + recipientName + '.\n\nCongratulations on attending the ' + event + ' event. Attached below is your newfound certification.' +
+      ' Thank you for choosing SEES, and we hope you have an EVENTful rest of the day!\n\nRegards,\nThe SEES Team',
+      attachments: [
+        {
+            filename: pdfFilename, 
+            path: path.join(__dirname, '../output/file-name.pdf'), // Make sure that the pdf is stored in reachable area
+            contentType: 'application/pdf'
+        }
+      ]
     }
-  ]
-};
-
-/*
-transporter.sendMail(mailOptions, function(error, info){
-  if (error) {
-    console.log(error);
+  // Otherwise, it is a mass email sent for promotional purposes.
   } else {
-    console.log('Email sent: ' + info.response);
+    var mailOptions = {
+      from: 'sees.mailer.daemon@gmail.com',
+      to: email,
+      subject: 'Event ' + event + '',
+      text: 'Heyo broski, sick tricks my dude'
+    }
   }
-});
-*/
+  transporter.sendMail(mailOptions, function(error, info){
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
+}

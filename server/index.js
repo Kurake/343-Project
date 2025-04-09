@@ -12,7 +12,7 @@ app.use(cors());
 app.use(bodyParser.json());
 const io = require('socket.io')(http, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3002", "http://localhost:3003"]
+      origin: ["http://localhost:3000", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "http://localhost:3005"]
   }
 });
 
