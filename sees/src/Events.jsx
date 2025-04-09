@@ -39,7 +39,7 @@ const Events = () => {
     setEventData(event
       ? {
         ...event,
-        organizers: event.organizers.map(email => ({ label: email, value: email })) // Format organizers correctly for react-select
+        organizers: event.organizers.map(email => ({ label: email, value: email })) // Format organizers correctly
       } : { title: "", startDate: "", endDate: "", organizers: [], price: "" });
     setShowModal(true);
   };
