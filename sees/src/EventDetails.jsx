@@ -14,18 +14,26 @@ const pastelBox = {
 const EventDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Provide default values to avoid accessing undefined properties
   const [event, setEvent] = useState({
-    ...location.state,
-    organizers: Array.isArray(location.state.organizers) ? location.state.organizers : [],
-    sessions: location.state.sessions || []
+    id: location.state?.id || null,
+    title: location.state?.title || "Untitled Event",
+    startDate: location.state?.startDate || "",
+    endDate: location.state?.endDate || "",
+    price: location.state?.price || 0,
+    image: location.state?.image || "/images/stock.jpg",
+    organizers: Array.isArray(location.state?.organizers) ? location.state.organizers : [],
+    sessions: location.state?.sessions || [],
   });
 
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [editingSessionIndex, setEditingSessionIndex] = useState(null);
   const [newSession, setNewSession] = useState({ title: "", description: "", date: "", location: "", online: false });
   const [allUsers, setAllUsers] = useState([]);
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
-  const { userBalance } = useUser();
+  const { userBalance, user } = useUser();
 
   const handleSessionShow = (index = null) => {
     setEditingSessionIndex(index);
@@ -109,6 +117,52 @@ const EventDetails = () => {
     fetchSessions();  // <-- This is the call to fetch sessions initially
   }, [event.id]);  // <-- It will run again when event.id changes
 
+  useEffect(() => {
+    const fetchPaymentStatus = async () => {
+      try {
+        if (!user || !user.isLoggedIn || !user.email || !event.id) return;
+        
+        // Make sure event.id is a number
+        const eventId = parseInt(event.id, 10);
+        if (isNaN(eventId)) {
+          console.error('Invalid event ID:', event.id);
+          return;
+        }
+        
+        const response = await axios.get(
+          `http://localhost:3001/api/events/${eventId}/payments/${encodeURIComponent(user.email)}`
+        );
+        
+        setPaymentStatus(response.data.status);
+      } catch (error) {
+        console.error('Error fetching payment status:', error);
+      }
+    };
+  
+    if (user && user.isLoggedIn) {
+      fetchPaymentStatus();
+    }
+  }, [event.id, user]);
+
+  useEffect(() => {
+    const fetchPaymentStatus = async () => {
+      try {
+        if (!user || !user.isLoggedIn || !user.email) return;
+        
+        const response = await axios.get(
+          `http://localhost:3001/api/events/${event.id}/payments/${user.email}`
+        );
+        setPaymentStatus(response.data.status);
+      } catch (error) {
+        console.error('Error fetching payment status:', error);
+      }
+    };
+  
+    if (location.state?.forceRefresh && user?.isLoggedIn) {
+      fetchPaymentStatus();
+    }
+  }, [location.state]);
+
   return (
     <Container className="mt-4">
       <Card style={pastelBox}>
@@ -122,14 +176,23 @@ const EventDetails = () => {
           <Card.Title style={{ fontSize: "1.8rem", color: "#4F709C" }}>{event.title}</Card.Title>
           <Card.Text>Date: {event.startDate} - {event.endDate}</Card.Text>
           <Card.Text>Organizers: {Array.isArray(event.organizers) ? event.organizers.join(", ") : "No organizers"}</Card.Text>
-          <Button variant="success" className="ms-2" onClick={() => handleSessionShow()}>Add Session</Button>
-          <Button
-            variant="primary"
-            className="ms-2"
-            onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
-          >
-            Register (${event.price ? event.price : '0.00'})
-          </Button>
+          <Card.Text>
+            Payment Status: <strong>{paymentStatus === 'completed' ? 'Paid' : 'Not Paid'}</strong>
+          </Card.Text>
+          {event.organizers.includes(user?.email) && (
+            <Button variant="success" className="ms-2" onClick={() => handleSessionShow()}>
+              Add Session
+            </Button>
+          )}
+          {paymentStatus !== 'completed' && (
+            <Button
+              variant="primary"
+              className="ms-2"
+              onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
+            >
+              Register (${event.price ? event.price.toFixed(2) : '0.00'})
+            </Button>
+          )}
         </Card.Body>
       </Card>
 

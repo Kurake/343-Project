@@ -51,36 +51,36 @@ export const EventsProvider = ({ children }) => {
     return data.map(event => ({
       id: event.eventid,
       title: event.title,
-      startDate: event.startdate.split('T')[0], // remove time
-      endDate: event.enddate.split('T')[0],     // remove time
-      image: event.image, // You can replace this later
-      organizers: event.organizers || [], // Fill this in if you fetch organizer emails separately
-      price: event.price,
-      attendeesCount: event.attendeescount,
-      revenue: event.revenue,
-      funding: event.funding,
+      startDate: event.startdate.split('T')[0],
+      endDate: event.enddate.split('T')[0],
+      image: event.image || "",
+      organizers: event.organizers || [],
+      price: event.price || 0,
+      attendeesCount: event.attendeescount || 0,
+      revenue: event.revenue || 0,
     }));
   };
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await axios.get("http://localhost:3001/api/events"); // update URL to match your backend
-        const transformed = transformEvents(response.data);
-        setEvents(transformed);
-      } catch (err) {
-        console.error("Error fetching events:", err);
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("http://localhost:3001/api/events");
+      const transformed = transformEvents(response.data);
+      setEvents(transformed);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchEvents();
   }, []);
 
   return (
-    <EventsContext.Provider value={{ events, setEvents }}>
+    <EventsContext.Provider value={{ events, setEvents, loading, error, fetchEvents }}>
       {children}
     </EventsContext.Provider>
   );
