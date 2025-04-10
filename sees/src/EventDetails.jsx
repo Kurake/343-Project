@@ -120,15 +120,48 @@ const EventDetails = () => {
   useEffect(() => {
     const fetchPaymentStatus = async () => {
       try {
-        const response = await axios.get(`http://localhost:3001/api/events/${event.id}/payments/${user.id}`);
-        setPaymentStatus(response.data.status); // 'completed', 'pending', etc.
+        if (!user || !user.isLoggedIn || !user.email || !event.id) return;
+        
+        // Make sure event.id is a number
+        const eventId = parseInt(event.id, 10);
+        if (isNaN(eventId)) {
+          console.error('Invalid event ID:', event.id);
+          return;
+        }
+        
+        const response = await axios.get(
+          `http://localhost:3001/api/events/${eventId}/payments/${encodeURIComponent(user.email)}`
+        );
+        
+        setPaymentStatus(response.data.status);
       } catch (error) {
         console.error('Error fetching payment status:', error);
       }
     };
   
-    fetchPaymentStatus();
-  }, [event.id, user.id]);
+    if (user && user.isLoggedIn) {
+      fetchPaymentStatus();
+    }
+  }, [event.id, user]);
+
+  useEffect(() => {
+    const fetchPaymentStatus = async () => {
+      try {
+        if (!user || !user.isLoggedIn || !user.email) return;
+        
+        const response = await axios.get(
+          `http://localhost:3001/api/events/${event.id}/payments/${user.email}`
+        );
+        setPaymentStatus(response.data.status);
+      } catch (error) {
+        console.error('Error fetching payment status:', error);
+      }
+    };
+  
+    if (location.state?.forceRefresh && user?.isLoggedIn) {
+      fetchPaymentStatus();
+    }
+  }, [location.state]);
 
   return (
     <Container className="mt-4">
@@ -144,16 +177,20 @@ const EventDetails = () => {
           <Card.Text>Date: {event.startDate} - {event.endDate}</Card.Text>
           <Card.Text>Organizers: {Array.isArray(event.organizers) ? event.organizers.join(", ") : "No organizers"}</Card.Text>
           <Card.Text>
-            Payment Status: <strong>{paymentStatus || 'Not Paid'}</strong>
+            Payment Status: <strong>{paymentStatus === 'completed' ? 'Paid' : 'Not Paid'}</strong>
           </Card.Text>
-          <Button variant="success" className="ms-2" onClick={() => handleSessionShow()}>Add Session</Button>
+          {event.organizers.includes(user?.email) && (
+            <Button variant="success" className="ms-2" onClick={() => handleSessionShow()}>
+              Add Session
+            </Button>
+          )}
           {paymentStatus !== 'completed' && (
             <Button
               variant="primary"
               className="ms-2"
               onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
             >
-              Register (${event.price ? event.price : '0.00'})
+              Register (${event.price ? event.price.toFixed(2) : '0.00'})
             </Button>
           )}
         </Card.Body>

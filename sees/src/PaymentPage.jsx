@@ -3,12 +3,14 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Card, Button, Alert, Form, Row, Col, Spinner } from 'react-bootstrap';
 import { useUser } from './UserContext';
 import axios from 'axios';
+import { useEvents } from './EventsContext';
 
 const PaymentPage = () => {
   const { eventId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { userBalance, deductBalance, user } = useUser();
+  const { fetchEvents } = useEvents();
 
   const [event, setEvent] = useState(location.state?.event || null);
   const [loading, setLoading] = useState(!event);
@@ -43,11 +45,24 @@ const PaymentPage = () => {
     }
 
     setProcessing(true);
-    setTimeout(() => {
-      deductBalance(event.price);
-      setProcessing(false);
-      setPaymentSuccess(true);
-    }, 1500);
+    
+    // Make API call to backend
+    axios.post(`http://localhost:3001/api/events/${event.id}/pay`, {
+      userId: user.email,
+      amount: event.price,
+      paymentMethod: 'balance',
+    })
+      .then(response => {
+        deductBalance(event.price);
+        fetchEvents(); // Refresh events data
+        setProcessing(false);
+        setPaymentSuccess(true);
+      })
+      .catch(err => {
+        console.error('Payment Error:', err);
+        setError(err.response?.data?.message || 'Payment failed. Please try again.');
+        setProcessing(false);
+      });
   };
 
   const handleStripePayment = () => {
@@ -56,15 +71,31 @@ const PaymentPage = () => {
 
   const mockStripePayment = (success) => {
     setProcessing(true);
-    setTimeout(() => {
-      setProcessing(false);
-      if (success) {
-        setPaymentSuccess(true);
-      } else {
+    
+    if (success) {
+      axios.post(`http://localhost:3001/api/events/${event.id}/pay`, {
+        userId: user.email,
+        amount: event.price,
+        paymentMethod: 'stripe',
+      })
+        .then(response => {
+          fetchEvents(); // Refresh events data
+          setProcessing(false);
+          setPaymentSuccess(true);
+          setShowStripe(false);
+        })
+        .catch(err => {
+          console.error('Payment Error:', err);
+          setError(err.response?.data?.message || 'Payment failed. Please try again.');
+          setProcessing(false);
+        });
+    } else {
+      setTimeout(() => {
+        setProcessing(false);
         setError('Payment failed. Please try again.');
-      }
-      setShowStripe(false);
-    }, 1500);
+        setShowStripe(false);
+      }, 1500);
+    }
   };
 
   const handlePay = async () => {
@@ -73,19 +104,23 @@ const PaymentPage = () => {
 
     try {
       const response = await axios.post(`http://localhost:3001/api/events/${event.id}/pay`, {
-        userId: user.id, // Assuming `user` is available from context
+        userId: user.email,
         amount: event.price,
-        paymentMethod: paymentMethod, // 'balance' or 'stripe'
+        paymentMethod: paymentMethod,
       });
 
       if (response.status === 201) {
+        if (paymentMethod === 'balance') {
+          deductBalance(event.price);
+        }
+        fetchEvents(); // Refresh events data
         setPaymentSuccess(true);
       } else {
         setError('Payment failed. Please try again.');
       }
     } catch (err) {
       console.error('Payment Error:', err);
-      setError('Payment failed. Please try again.');
+      setError(err.response?.data?.message || 'Payment failed. Please try again.');
     } finally {
       setProcessing(false);
     }
@@ -136,7 +171,12 @@ const PaymentPage = () => {
             </Card.Text>
             <Button 
               style={{ backgroundColor: '#A7C7E7', border: 'none' }} 
-              onClick={() => navigate(`/event/${event.id}`)}
+              onClick={() => {
+                fetchEvents(); // Refresh events one more time before navigating
+                navigate(`/event/${event.id}`, { 
+                  state: { ...event, forceRefresh: true } 
+                });
+              }}
             >
               View Event Details
             </Button>

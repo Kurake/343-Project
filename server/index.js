@@ -331,26 +331,40 @@ io.on('connection', (socket) => {
 
 });
 
+// In index.js - Update the events endpoint to include revenue and attendees count
 app.get("/api/events", async (req, res) => {
-    try {
-      const result = await pool.query(`
-        SELECT 
-          e.*, 
-          COALESCE(array_agg(u.email) FILTER (WHERE u.email IS NOT NULL), '{}') AS organizers
-        FROM Event e
-        LEFT JOIN eventorganizer eo ON e.eventid = eo.eventid
-        LEFT JOIN "user" u ON eo.userid = u.userid
-        GROUP BY e.eventid
-        ORDER BY e.eventid DESC
-      `);
-      res.json(result.rows);
-    } catch (err) {
-      console.error("Error fetching events:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  try {
+    const eventsResult = await pool.query(`
+      SELECT e.*, 
+             COALESCE(e.revenue, 0) as revenue, 
+             COALESCE(e.attendeescount, 0) as attendeescount
+      FROM event e
+      ORDER BY e.eventid
+    `);
+    
+    // For each event, fetch its organizers
+    const events = await Promise.all(eventsResult.rows.map(async (event) => {
+      const organizersResult = await pool.query(`
+        SELECT u.email 
+        FROM eventorganizer eo
+        JOIN "user" u ON eo.userid = u.userid
+        WHERE eo.eventid = $1
+      `, [event.eventid]);
+      
+      return {
+        ...event,
+        organizers: organizersResult.rows.map(row => row.email)
+      };
+    }));
+    
+    res.json(events);
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
-  app.post("/api/events", async (req, res) => {
+app.post("/api/events", async (req, res) => {
     console.log("Body: ", req.body);
     const { title, startDate, endDate, price, organizers } = req.body;
   
@@ -557,10 +571,15 @@ app.delete('/api/events/:eventId/sessions/:sessionId', async (req, res) => {
     }
 });
 
+// In index.js - Complete implementation of the payment endpoint
 app.post('/api/events/:eventId/pay', async (req, res) => {
-  const { eventId } = req.params;
-  const { userId, amount, paymentMethod } = req.body;
-
+  const eventIdInt = parseInt(req.params.eventId, 10);
+  if (isNaN(eventIdInt)) {
+    return res.status(400).json({ message: 'Invalid event ID' });
+  }
+  
+  const { userId, amount, paymentMethod } = req.body; // userId is email here
+  
   if (!userId || !amount || !paymentMethod) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
@@ -568,39 +587,60 @@ app.post('/api/events/:eventId/pay', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    
+    // First check if this user has already paid for this event
+    const existingPaymentResult = await client.query(
+      `SELECT t.status 
+       FROM transaction t
+       JOIN "user" u ON t.userid = u.userid
+       WHERE u.email = $1 AND t.eventid = $2 AND t.status = 'completed'`,
+      [userId, eventIdInt]
+    );
+    
+    if (existingPaymentResult.rows.length > 0) {
+      return res.status(400).json({ message: 'You have already paid for this event' });
+    }
+    
+    // Get the actual userId from the email
+    const userResult = await client.query(
+      `SELECT userid, balance FROM "user" WHERE email = $1`,
+      [userId]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+    
+    const actualUserId = userResult.rows[0].userid;
+    const userBalance = userResult.rows[0].balance || 0;
 
     // Check if the user has sufficient balance for balance payments
+    if (paymentMethod === 'balance' && userBalance < amount) {
+      return res.status(400).json({ message: 'Insufficient balance' });
+    }
+
+    // Deduct balance if using balance payment method
     if (paymentMethod === 'balance') {
-      const userResult = await client.query(
-        `SELECT balance FROM "user" WHERE userid = $1`,
-        [userId]
-      );
-
-      const userBalance = userResult.rows[0]?.balance || 0;
-      if (userBalance < amount) {
-        return res.status(400).json({ message: 'Insufficient balance' });
-      }
-
-      // Deduct balance
       await client.query(
         `UPDATE "user" SET balance = balance - $1 WHERE userid = $2`,
-        [amount, userId]
+        [amount, actualUserId]
       );
     }
 
     // Record the transaction
     const transactionResult = await client.query(
-      `INSERT INTO transaction (userid, eventid, fees, paymentmethod, status)
-       VALUES ($1, $2, $3, $4, 'completed') RETURNING *`,
-      [userId, eventId, amount, paymentMethod]
+      `INSERT INTO transaction (userid, eventid, fees, paymentmethod, status, type)
+       VALUES ($1, $2, $3, $4, 'completed', 'payment') RETURNING *`,
+      [actualUserId, eventIdInt, amount, paymentMethod]
     );
 
     // Update event revenue and attendee count
     await client.query(
       `UPDATE event 
-       SET revenue = revenue + $1, attendeescount = attendeescount + 1 
+       SET revenue = COALESCE(revenue, 0) + $1, 
+           attendeescount = COALESCE(attendeescount, 0) + 1 
        WHERE eventid = $2`,
-      [amount, eventId]
+      [amount, eventIdInt]
     );
 
     await client.query('COMMIT');
@@ -614,16 +654,34 @@ app.post('/api/events/:eventId/pay', async (req, res) => {
   }
 });
 
-// GET /api/events/:eventId/payments/:userId - Check payment status
+// Remove the duplicate endpoint and keep just this one fixed version
 app.get('/api/events/:eventId/payments/:userId', async (req, res) => {
   try {
-    const { eventId, userId } = req.params;
+    const { eventId, userId } = req.params; // userId is email here
+    
+    // First get the user ID from the email
+    const userResult = await pool.query(
+      `SELECT userid FROM "user" WHERE email = $1`,
+      [userId] // First parameter is email string
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(200).json({ status: 'Not Paid' });
+    }
+    
+    const actualUserId = userResult.rows[0].userid;
+    
+    // Convert eventId to integer explicitly
+    const eventIdInt = parseInt(eventId, 10);
+    if (isNaN(eventIdInt)) {
+      return res.status(400).json({ message: 'Invalid event ID' });
+    }
     
     const result = await pool.query(
       `SELECT status FROM transaction 
        WHERE eventid = $1 AND userid = $2
        ORDER BY transactionid DESC LIMIT 1`,
-      [eventId, userId]
+      [eventIdInt, actualUserId] // Now using integer eventId and integer userId
     );
     
     if (result.rows.length === 0) {
