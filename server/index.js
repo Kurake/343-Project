@@ -5,18 +5,22 @@ const cors = require('cors');
 const pool = require('./conn');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/auth');
+const sendMail = require('./Mailer');
+const notifier = require('./notifier');
 
 const app = express();
+app.use(express.json()); 
 const http = require('http').createServer(app);
 app.use(cors());
 app.use(bodyParser.json());
 const io = require('socket.io')(http, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3002", "http://localhost:3003"]
+      origin: ["http://localhost:3000", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "http://localhost:3005"]
   }
 });
 
 app.use('/api/auth', authRoutes);
+
 
 const sessions = new Map();
 const globalRoomId = uuidv4();
@@ -447,6 +451,7 @@ app.put("/api/events/:id", async (req, res) => {
 });
 
 app.get("/api/users/emails", async (req, res) => {
+  console.log("Preparing to get all emails");
   try {
     const result = await pool.query(`SELECT email FROM "user"`);
     res.json(result.rows.map(row => row.email));
@@ -465,6 +470,30 @@ app.get("/api/users/organizer/emails", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+//Get user emails whose eventIDs match 
+app.get("/api/users/emails/:eventId", async (req, res) => {
+  
+  const eventId = req.params.eventId;
+  console.log("Preparing to get all emails for eventID " + eventId );
+
+  try {
+    const result = await pool.query(
+      `SELECT u.email, u.name
+       FROM "attendsEvent" ae
+       JOIN "user" u ON ae.userid = u.userid
+       WHERE ae.eventid = $1`,
+      [eventId]
+    );
+    
+    const users = result.rows;
+    res.status(200).json({ users });
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ message: 'Error fetching users' });
+  }
+});
+
 
 app.post('/api/events/:eventId/sessions', async (req, res) => {
   try {
@@ -657,6 +686,13 @@ app.post('/api/events/:eventId/pay', async (req, res) => {
       [amount, eventIdInt]
     );
 
+    // With event revenue and attendees updated, you can now add to attendsEvent
+    await client.query(
+      `INSERT INTO attendingEvent (eventid, userid)
+       VALUES ($1, $2)`,
+      [eventIdInt, actualUserId]
+    );
+
     await client.query('COMMIT');
     res.status(201).json(transactionResult.rows[0]);
   } catch (err) {
@@ -706,6 +742,33 @@ app.get('/api/events/:eventId/payments/:userId', async (req, res) => {
   } catch (error) {
     console.error('Error checking payment status:', error);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/send-email', async(req, res) => {
+    const {email, event, name} = req.body;
+
+    try {
+        console.log('email:', email);
+        console.log('event:', event);
+        console.log('name:', name);
+        await sendMail({email, event, name});
+    } catch (err){
+        console.error(err);
+    }
+});
+
+app.post('/message', async (req, res)=> {
+  console.log("Posting prepped")
+  try {
+    const {email, event} = req.body;
+    // Emit the message event with payload
+    notifier.emit('message', {email, event});
+  
+    res.status(200).json({ success: true, msg: 'Message received and being processed.' });
+  } catch (err){
+    console.error('Error sending email: ', err);
+    res.status(500).json({ message: 'Error sending email' }); // Send error response as JSON
   }
 });
 

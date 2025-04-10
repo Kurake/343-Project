@@ -4,15 +4,19 @@ import { Container, Card, Button, Modal, Form, ListGroup } from "react-bootstrap
 import { useUser } from './UserContext';
 import axios from "axios";
 import { hasPermission } from './Utils/permissionUtils';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Popover from 'react-bootstrap/Popover';
 
 const pastelBox = {
   backgroundColor: "#FDF6F0",
   borderRadius: "16px",
-  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+  boxShadow: "0 4px 10px rgba(53, 21, 21, 0.05)",
   padding: "1.5rem",
 };
 
 const EventDetails = () => {
+  const { userBalance, user } = useUser();
+  const userRole = user.role;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -38,7 +42,6 @@ const EventDetails = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [paymentStatus, setPaymentStatus] = useState(null);
 
-  const { userBalance, user } = useUser();
 
   const handleSessionShow = (index = null) => {
     setEditingSessionIndex(index);
@@ -168,6 +171,115 @@ const EventDetails = () => {
     }
   }, [location.state]);
 
+  const handleSendNote = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/users/emails', {
+        method: 'GET',
+        headers: {'Content-Type': 'application/json'}
+      });
+      const emails = await res.json();
+
+      if(res.ok) {
+        // You can now handle the emails (e.g., prepare them for mailing or display)
+        emails.forEach(email => {
+          sendNote(email);
+        });
+      } else {
+        console.error("Error fetching users:", emails.message);
+      }
+    } catch (err) {
+      console.error("Error fetching attending users:", err);
+    }
+
+  };
+
+  const sendNote = async (user) => {
+    try {
+      const res = await fetch('http://localhost:3001/message', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: user, event: event.title})
+      });
+      // Check if the response is JSON before parsing it
+      const contentType = res.headers.get("Content-Type");
+      if (contentType && contentType.includes("application/json")) {
+        const result = await res.json();
+      } else {
+        console.error("Expected JSON response, but received:", contentType);
+        alert("Error: Expected JSON response, but got something else.");
+      }
+    } catch (err) {
+      alert('Error sending email, 123 ' + err);
+      console.error(err);
+    }
+  }
+
+  const handleSendCert = async () => {
+    const eventId = parseInt(event.id, 10);
+    // Need to do this multiple times. In order to know who to send it to, use id to get emails
+    console.log("HANDLING SENDING CERTIFICATIONS");
+
+    try {
+      const res = await fetch(`http://localhost:3001/api/users/emails/${eventId}`, {
+        method: 'GET',
+        headers: {'Content-Type': 'application/json'},
+      });
+      const data = await res.json();
+
+      if(res.ok) {
+        const users = data.users; // Array of users with emails and names
+        console.log('Attending users:', users);
+  
+        // You can now handle the users (e.g., prepare them for mailing or display)
+        users.forEach(user => {
+          sendCerts(user)
+        });
+      } else {
+        console.error("Error fetching users:", data.message);
+      }
+    } catch (err) {
+      console.error("Error fetching attending users:", err);
+    }
+  };
+
+  const sendCerts = async (user) => {
+    try {
+      const res = await fetch('http://localhost:3001/send-email', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: user.email, event: event.title, name: user.name})
+      });
+      console.log('Fetch response status:', res.status);
+      const result = await res.json();
+    } catch(err) {
+      alert('Error sending email, 123 ' + err);
+      console.error(err);
+    }
+  }
+
+
+  const notiPopover = (
+    <Popover id="popover-basic">
+      <Popover.Header as="h3">Confirm Notifications?</Popover.Header>
+      <Popover.Body>
+        Do you want to send email notifications to all users?
+        <Button onClick={handleSendNote}>CONFIRM</Button>
+      </Popover.Body>
+      {/*Expecting email, event and then ""*/}
+    </Popover>
+  );
+
+  const certiPopover = (
+    <Popover id="popover-basic">
+      <Popover.Header as="h3">Confirm Certifications?</Popover.Header>
+      <Popover.Body>
+        Do you want to send certifications to all users?
+        <Button onClick={handleSendCert}>CONFIRM</Button>
+      </Popover.Body>
+      {/*Expecting email, event and recipient name*/}
+    </Popover>
+  );
+
   return (
     <Container className="mt-4">
       <Card style={pastelBox}>
@@ -202,6 +314,17 @@ const EventDetails = () => {
                 This is a VIP event. Only sponsors and organizers can register.
               </p>
             )
+          )}
+          {/*If the account is an organizer account, allow mailing options*/}
+          {userRole === 'organizer' && (
+            <OverlayTrigger trigger="click" placement="bottom" overlay={notiPopover}>
+              <Button variant="primary" className="ms-2">Send Notifications</Button>
+            </OverlayTrigger>
+          )}
+          {userRole === 'organizer' && (
+            <OverlayTrigger trigger="click" placement="bottom" overlay={certiPopover}>
+              <Button variant="primary" className="ms-2">Send Certifications</Button>
+            </OverlayTrigger>
           )}
         </Card.Body>
       </Card>

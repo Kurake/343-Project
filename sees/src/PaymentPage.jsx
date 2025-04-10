@@ -63,6 +63,16 @@ const PaymentPage = () => {
     }
   }, [event, eventId]);
 
+  // Ensure event price exists and is a number
+  useEffect(() => {
+    if (event && (event.price === undefined || event.price === null)) {
+      setEvent({
+        ...event,
+        price: 0
+      });
+    }
+  }, [event]);
+
   const handlePayWithBalance = () => {
     if (!userBalance || userBalance < event.price) {
       setError(`Insufficient funds. Your balance: $${userBalance.toFixed(2)}`);
