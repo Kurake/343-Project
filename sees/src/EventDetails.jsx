@@ -24,8 +24,9 @@ const EventDetails = () => {
   const [editingSessionIndex, setEditingSessionIndex] = useState(null);
   const [newSession, setNewSession] = useState({ title: "", description: "", date: "", location: "", online: false });
   const [allUsers, setAllUsers] = useState([]);
+  const [paymentStatus, setPaymentStatus] = useState(null);
 
-  const { userBalance } = useUser();
+  const { userBalance, user } = useUser();
 
   const handleSessionShow = (index = null) => {
     setEditingSessionIndex(index);
@@ -109,6 +110,19 @@ const EventDetails = () => {
     fetchSessions();  // <-- This is the call to fetch sessions initially
   }, [event.id]);  // <-- It will run again when event.id changes
 
+  useEffect(() => {
+    const fetchPaymentStatus = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3001/api/events/${event.id}/payments/${user.id}`);
+        setPaymentStatus(response.data.status); // 'completed', 'pending', etc.
+      } catch (error) {
+        console.error('Error fetching payment status:', error);
+      }
+    };
+  
+    fetchPaymentStatus();
+  }, [event.id, user.id]);
+
   return (
     <Container className="mt-4">
       <Card style={pastelBox}>
@@ -122,6 +136,9 @@ const EventDetails = () => {
           <Card.Title style={{ fontSize: "1.8rem", color: "#4F709C" }}>{event.title}</Card.Title>
           <Card.Text>Date: {event.startDate} - {event.endDate}</Card.Text>
           <Card.Text>Organizers: {Array.isArray(event.organizers) ? event.organizers.join(", ") : "No organizers"}</Card.Text>
+          <Card.Text>
+            Payment Status: <strong>{paymentStatus || 'Not Paid'}</strong>
+          </Card.Text>
           <Button variant="success" className="ms-2" onClick={() => handleSessionShow()}>Add Session</Button>
           <Button
             variant="primary"
