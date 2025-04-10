@@ -248,6 +248,22 @@ const PaymentPage = () => {
                     checked={paymentMethod === 'debit'}
                     onChange={() => setPaymentMethod('debit')}
                   />
+                  <Form.Check 
+                    type="radio"
+                    id="balance"
+                    name="paymentMethod"
+                    label="Pay with Balance"
+                    checked={paymentMethod === 'balance'}
+                    onChange={() => setPaymentMethod('balance')}
+                  />
+                  <Form.Check 
+                    type="radio"
+                    id="stripe"
+                    name="paymentMethod"
+                    label="Pay with Stripe"
+                    checked={paymentMethod === 'stripe'}
+                    onChange={() => setPaymentMethod('stripe')}
+                  />
                   <Button 
                     variant="success" 
                     className="me-2 mt-3"
