@@ -557,6 +557,55 @@ app.delete('/api/events/:eventId/sessions/:sessionId', async (req, res) => {
     }
 });
 
+app.post('/api/events/:eventId/pay', async (req, res) => {
+  const { eventId } = req.params;
+  const { userId, amount, paymentMethod } = req.body;
+
+  if (!userId || !amount || !paymentMethod) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Check if the user has sufficient balance for balance payments
+    if (paymentMethod === 'balance') {
+      const userResult = await client.query(
+        `SELECT balance FROM "user" WHERE userid = $1`,
+        [userId]
+      );
+
+      const userBalance = userResult.rows[0]?.balance || 0;
+      if (userBalance < amount) {
+        return res.status(400).json({ message: 'Insufficient balance' });
+      }
+
+      // Deduct balance
+      await client.query(
+        `UPDATE "user" SET balance = balance - $1 WHERE userid = $2`,
+        [amount, userId]
+      );
+    }
+
+    // Record the transaction
+    const transactionResult = await client.query(
+      `INSERT INTO transaction (userid, eventid, fees, paymentmethod, status)
+       VALUES ($1, $2, $3, $4, 'completed') RETURNING *`,
+      [userId, eventId, amount, paymentMethod]
+    );
+
+    await client.query('COMMIT');
+    res.status(201).json(transactionResult.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Payment Error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
 app.listen(3001, () => {
   console.log('✅ Server running on http://localhost:3001');
 });
