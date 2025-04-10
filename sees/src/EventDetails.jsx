@@ -169,7 +169,7 @@ const EventDetails = () => {
   const handleSendNote = async () => {
     try {
       const res = await fetch('http://localhost:3001/api/users/emails', {
-        method: 'POST',
+        method: 'GET',
         headers: {'Content-Type': 'application/json'}
       });
       const emails = await res.json();
@@ -180,7 +180,7 @@ const EventDetails = () => {
           sendNote(email);
         });
       } else {
-        console.error("Error fetching users:", data.message);
+        console.error("Error fetching users:", emails.message);
       }
     } catch (err) {
       console.error("Error fetching attending users:", err);
@@ -215,10 +215,9 @@ const EventDetails = () => {
     console.log("HANDLING SENDING CERTIFICATIONS");
 
     try {
-      const res = await fetch('http://localhost:3001/api/users/emails/${eventId}', {
-        method: 'POST',
+      const res = await fetch(`http://localhost:3001/api/users/emails/${eventId}`, {
+        method: 'GET',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ eventId }) // Send eventId in the request body
       });
       const data = await res.json();
 

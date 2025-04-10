@@ -451,6 +451,7 @@ app.put("/api/events/:id", async (req, res) => {
 });
 
 app.get("/api/users/emails", async (req, res) => {
+  console.log("Preparing to get all emails");
   try {
     const result = await pool.query(`SELECT email FROM "user"`);
     res.json(result.rows.map(row => row.email));
@@ -472,12 +473,14 @@ app.get("/api/users/organizer/emails", async (req, res) => {
 
 //Get user emails whose eventIDs match 
 app.get("/api/users/emails/:eventId", async (req, res) => {
+  
   const eventId = req.params.eventId;
+  console.log("Preparing to get all emails for eventID " + eventId );
 
   try {
     const result = await pool.query(
       `SELECT u.email, u.name
-       FROM attendsEvent ae
+       FROM "attendsEvent" ae
        JOIN "user" u ON ae.userid = u.userid
        WHERE ae.eventid = $1`,
       [eventId]
