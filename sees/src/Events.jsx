@@ -30,12 +30,12 @@ const Events = () => {
 
 
   const availableImages = [
-    "/images/logo192.png",
-    "/images/cowboy.jpg",
-    "/images/magic.jpg",
-    "/images/powerranger.jpg",
-    "/images/spiderman.jpg",
-    "/images/sunflower.jpg",
+    "/images/concert.webp",
+    "/images/fancydinner.avif",
+    "/images/seminar.jpg",
+    "/images/presentation.webp",
+    "/images/FormalEvent.jpg",
+    "/images/PodCast.jpg",
     "/images/stock.jpg", // your default
   ];
 
