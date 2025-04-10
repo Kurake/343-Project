@@ -3,11 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Container, Card, Button, Modal, Form, ListGroup } from "react-bootstrap";
 import { useUser } from './UserContext';
 import axios from "axios";
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Popover from 'react-bootstrap/Popover';
 
 const pastelBox = {
   backgroundColor: "#FDF6F0",
   borderRadius: "16px",
-  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+  boxShadow: "0 4px 10px rgba(53, 21, 21, 0.05)",
   padding: "1.5rem",
 };
 
@@ -164,6 +166,59 @@ const EventDetails = () => {
       fetchPaymentStatus();
     }
   }, [location.state]);
+  const handleSendNote = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/send-email', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: "clark.long@yahoo.com", event: event.title, name: null})
+      });
+      console.log('Fetch response status:', res.status);
+      const result = await res.json();
+      alert(result.message);
+    } catch(err) {
+      alert('Error sending email, 123 ' + err);
+      console.error(err);
+    }
+  };
+
+  const handleSendCert = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/send-email', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: "clark.long@yahoo.com", event: event.title, name: "Clark Long"})
+      });
+      console.log('Fetch response status:', res.status);
+      const result = await res.json();
+      alert(result.message);
+    } catch(err) {
+      alert('Error sending email, 123 ' + err);
+      console.error(err);
+    }
+  };
+
+  const notiPopover = (
+    <Popover id="popover-basic">
+      <Popover.Header as="h3">Confirm Notifications?</Popover.Header>
+      <Popover.Body>
+        Do you want to send email notifications to all users?
+        <Button onClick={handleSendNote}>CONFIRM</Button>
+      </Popover.Body>
+      {/*Expecting email, event and then ""*/}
+    </Popover>
+  );
+
+  const certiPopover = (
+    <Popover id="popover-basic">
+      <Popover.Header as="h3">Confirm Certifications?</Popover.Header>
+      <Popover.Body>
+        Do you want to send certifications to all users?
+        <Button onClick={handleSendCert}>CONFIRM</Button>
+      </Popover.Body>
+      {/*Expecting email, event and recipient name*/}
+    </Popover>
+  );
 
   return (
     <Container className="mt-4">
@@ -195,15 +250,16 @@ const EventDetails = () => {
               Register (${event.price ? event.price.toFixed(2) : '0.00'})
             </Button>
           )}
-          {/*If the account is an organizer account, allow certification distribution*/}
+          {/*If the account is an organizer account, allow mailing options*/}
           {userRole === 'organizer' && (
-            <Button 
-              variant="primary" 
-              className="ms-2" 
-              onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
-            >
-              Send Certifications
-            </Button>
+            <OverlayTrigger trigger="click" placement="bottom" overlay={notiPopover}>
+              <Button variant="primary" className="ms-2">Send Notifications</Button>
+            </OverlayTrigger>
+          )}
+          {userRole === 'organizer' && (
+            <OverlayTrigger trigger="click" placement="bottom" overlay={certiPopover}>
+              <Button variant="primary" className="ms-2">Send Certifications</Button>
+            </OverlayTrigger>
           )}
         </Card.Body>
       </Card>
