@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Card, Button, Alert, Form, Row, Col, Spinner } from 'react-bootstrap';
 import { useUser } from './UserContext';
+import axios from 'axios';
+import { useEvents } from './EventsContext';
 
 const PaymentPage = () => {
   const { eventId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { userBalance, deductBalance } = useUser();
+  const { userBalance, deductBalance, user } = useUser();
+  const { fetchEvents } = useEvents();
 
   const [event, setEvent] = useState(location.state?.event || null);
   const [loading, setLoading] = useState(!event);
@@ -16,6 +19,32 @@ const PaymentPage = () => {
   const [error, setError] = useState('');
   const [showStripe, setShowStripe] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('credit');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCvv] = useState('');
+
+  // Format credit card expiry input (12/28 format)
+  const handleExpiryChange = (e) => {
+    const input = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    let formatted = input;
+
+    if (input.length > 0) {
+      // Format as MM/YY
+      if (input.length <= 2) {
+        formatted = input;
+      } else {
+        formatted = `${input.substring(0, 2)}/${input.substring(2, 4)}`;
+      }
+      
+      // Limit to 4 digits (MM/YY)
+      if (input.length > 4) {
+        formatted = `${input.substring(0, 2)}/${input.substring(2, 4)}`;
+      }
+    }
+
+    setCardExpiry(formatted);
+  };
+
   useEffect(() => {
     if (!event && eventId) {
       setLoading(true);
@@ -51,28 +80,115 @@ const PaymentPage = () => {
     }
 
     setProcessing(true);
-    setTimeout(() => {
-      deductBalance(event.price);
-      setProcessing(false);
-      setPaymentSuccess(true);
-    }, 1500);
+    
+    // Make API call to backend
+    axios.post(`http://localhost:3001/api/events/${event.id}/pay`, {
+      userId: user.email,
+      amount: event.price,
+      paymentMethod: 'balance',
+    })
+      .then(response => {
+        deductBalance(event.price);
+        fetchEvents(); // Refresh events data
+        setProcessing(false);
+        setPaymentSuccess(true);
+      })
+      .catch(err => {
+        console.error('Payment Error:', err);
+        setError(err.response?.data?.message || 'Payment failed. Please try again.');
+        setProcessing(false);
+      });
   };
 
   const handleStripePayment = () => {
     setShowStripe(true);
   };
 
-  const mockStripePayment = (success) => {
+  const isValidCardNumber = () => {
+    // Check if it's the test success card
+    return cardNumber.replace(/\s/g, '') === '4242424242424242';
+  };
+
+  const mockStripePayment = () => {
     setProcessing(true);
+    
+    // Process payment based on card number validation
+    const isSuccess = isValidCardNumber();
+    
     setTimeout(() => {
-      setProcessing(false);
-      if (success) {
+      if (isSuccess) {
+        axios.post(`http://localhost:3001/api/events/${event.id}/pay`, {
+          userId: user.email,
+          amount: event.price,
+          paymentMethod: 'stripe',
+        })
+          .then(response => {
+            fetchEvents(); // Refresh events data
+            setProcessing(false);
+            setPaymentSuccess(true);
+            setShowStripe(false);
+          })
+          .catch(err => {
+            console.error('Payment Error:', err);
+            setError(err.response?.data?.message || 'Payment failed. Please try again.');
+            setProcessing(false);
+          });
+      } else {
+        setProcessing(false);
+        setError('Invalid card number. Please use 4242 4242 4242 4242 for testing.');
+        // Don't hide stripe form on failure so they can try again
+      }
+    }, 1500); // Simulate processing time
+  };
+
+  const formatCardNumber = (value) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = matches && matches[0] || '';
+    const parts = [];
+    
+    for (let i = 0; i < match.length; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return value;
+    }
+  };
+
+  const handleCardNumberChange = (e) => {
+    const formatted = formatCardNumber(e.target.value);
+    setCardNumber(formatted);
+  };
+
+  const handlePay = async () => {
+    setProcessing(true);
+    setError('');
+
+    try {
+      const response = await axios.post(`http://localhost:3001/api/events/${event.id}/pay`, {
+        userId: user.email,
+        amount: event.price,
+        paymentMethod: paymentMethod,
+      });
+
+      if (response.status === 201) {
+        if (paymentMethod === 'balance') {
+          deductBalance(event.price);
+        }
+        fetchEvents(); // Refresh events data
         setPaymentSuccess(true);
       } else {
         setError('Payment failed. Please try again.');
       }
-      setShowStripe(false);
-    }, 1500);
+    } catch (err) {
+      console.error('Payment Error:', err);
+      setError(err.response?.data?.message || 'Payment failed. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const pastelBox = {
@@ -114,13 +230,18 @@ const PaymentPage = () => {
             <Card.Title as="h2" style={pastelHeader}>Payment Successful!</Card.Title>
             <Card.Text>
               Thank you for registering for <strong>{event.title}</strong>.
-              <div className="mt-2">
+              {/* <div className="mt-2">
                 Remaining balance: <strong>${userBalance.toFixed(2)}</strong>
-              </div>
+              </div> */}
             </Card.Text>
             <Button 
               style={{ backgroundColor: '#A7C7E7', border: 'none' }} 
-              onClick={() => navigate(`/event/${event.id}`)}
+              onClick={() => {
+                fetchEvents(); // Refresh events one more time before navigating
+                navigate(`/event/${event.id}`, { 
+                  state: { ...event, forceRefresh: true } 
+                });
+              }}
             >
               View Event Details
             </Button>
@@ -158,9 +279,9 @@ const PaymentPage = () => {
 
       <Card className="mb-4" style={pastelBox}>
         <Card.Body>
-          <h4>Payment Options</h4>
+          {/* <h4>Payment Options</h4> */}
           
-          <div className="mb-4">
+          {/* <div className="mb-4">
             <h5>Option 1: Pay with your balance</h5>
             <p>Current balance: <strong>${userBalance.toFixed(2)}</strong></p>
             {userBalance >= event.price ? (
@@ -176,115 +297,82 @@ const PaymentPage = () => {
                 Insufficient balance. Please add funds or use Stripe payment.
               </Alert>
             )}
-          </div>
+          </div> */}
 
           <div className="mt-4">
-            <h5>Option 2: Pay with Stripe</h5>
-            {!showStripe ? (
+            <h5>Pay with Stripe</h5>
+            {showStripe ? (
+              <div className="mt-3">
+                <Form.Group className="mb-3">
+                  <Form.Label>Card Number</Form.Label>
+                  <Form.Control 
+                    type="text" 
+                    placeholder="4242 4242 4242 4242" 
+                    value={cardNumber}
+                    onChange={handleCardNumberChange}
+                    maxLength={19}
+                    disabled={processing} 
+                  />
+                  <Form.Text className="text-muted">
+                    Use 4242 4242 4242 4242 for successful payment test
+                  </Form.Text>
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Row>
+                    <Col>
+                      <Form.Label>Expiry Date</Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={cardExpiry}
+                        onChange={handleExpiryChange}
+                        placeholder="MM/YY"
+                        maxLength="5"
+                        disabled={processing}
+                      />
+                    </Col>
+                    <Col>
+                      <Form.Label>CVV</Form.Label>
+                      <Form.Control 
+                        type="text" 
+                        placeholder="***" 
+                        value={cardCvv}
+                        onChange={(e) => setCvv(e.target.value)}
+                        maxLength={3}
+                        disabled={processing} 
+                      />
+                    </Col>
+                  </Row>
+                </Form.Group>
+                <div className="d-flex justify-content-between">
+                  <Button 
+                    variant="outline-secondary" 
+                    onClick={() => setShowStripe(false)}
+                    disabled={processing}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    style={{ backgroundColor: '#A7C7E7', border: 'none' }} 
+                    onClick={mockStripePayment}
+                    disabled={processing || cardNumber.length < 16}
+                  >
+                    {processing ? (
+                      <>
+                        <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                        <span className="ms-2">Processing...</span>
+                      </>
+                    ) : `Pay $${event.price ? event.price.toFixed(2) : '0.00'}`}
+                  </Button>
+                </div>
+              </div>
+            ) : (
               <Button 
                 style={{ backgroundColor: '#A7C7E7', border: 'none' }} 
                 onClick={handleStripePayment}
-                disabled={processing}
+                className="mt-2"
               >
-                <i className="bi bi-credit-card me-2"></i>
-                Pay with Stripe
+                Pay with Credit Card
               </Button>
-            ) : (
-              <Card className="p-3 border" style={{ backgroundColor: '#fdf6ff' }}>
-                <h6>Stripe Test Mode</h6>
-                <p>Use any of these test card numbers:</p>
-                <ul>
-                  <li>Success: 4242 4242 4242 4242</li>
-                  <li>Failure: 4000 0000 0000 0002</li>
-                </ul>
-                
-                <Form>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Card Number</Form.Label>
-                    <div className="position-relative">
-                      <Form.Control 
-                        type="text" 
-                        placeholder="1234 5678 9012 3456" 
-                        maxLength="19"
-                        value={cardNumber}
-                        onChange={(e) => {
-                          // Format card number with spaces every 4 digits
-                          const input = e.target.value.replace(/\s/g, '');
-                          const formatted = input.replace(/(\d{4})/g, '$1 ').trim();
-                          setCardNumber(formatted);
-                        }} 
-                      />
-                      <div className="position-absolute end-0 top-0 pt-2 pe-3">
-                        <i className="bi bi-credit-card text-secondary"></i>
-                      </div>
-                    </div>
-                    <small className="text-muted">Test: 4242 4242 4242 4242 (Success) or 4000 0000 0000 0002 (Failure)</small>
-                  </Form.Group>
-                  
-                  <Row>
-                    <Col>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Expiry Date</Form.Label>
-                        <Form.Control 
-                          type="text" 
-                          placeholder="MM/YY"
-                          maxLength="5"
-                          onChange={(e) => {
-                            // Format as MM/YY
-                            const input = e.target.value.replace(/\D/g, '');
-                            let formatted = input;
-                            if (input.length > 2) {
-                              formatted = `${input.slice(0, 2)}/${input.slice(2)}`;
-                            }
-                            e.target.value = formatted;
-                          }}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col>
-                      <Form.Group className="mb-3">
-                        <Form.Label>CVC</Form.Label>
-                        <Form.Control 
-                          type="text" 
-                          placeholder="123"
-                          maxLength="3" 
-                          onChange={(e) => e.target.value = e.target.value.replace(/\D/g, '')}
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-                  <Form.Check 
-                    type="radio"
-                    id="credit-card"
-                    name="paymentMethod"
-                    label="Credit Card"
-                    checked={paymentMethod === 'credit'}
-                    onChange={() => setPaymentMethod('credit')}
-                  />
-                  <Form.Check 
-                    type="radio"
-                    id="debit-card"
-                    name="paymentMethod"
-                    label="Debit Card"
-                    checked={paymentMethod === 'debit'}
-                    onChange={() => setPaymentMethod('debit')}
-                  />
-                  <Button 
-                    variant="success" 
-                    className="me-2 mt-3"
-                    onClick={() => mockStripePayment(true)}
-                  >
-                    Submit Success Test
-                  </Button>
-                  <Button 
-                    variant="warning" 
-                    className="mt-3"
-                    onClick={() => mockStripePayment(false)}
-                  >
-                    Submit Failure Test
-                  </Button>
-                </Form>
-              </Card>
             )}
           </div>
         </Card.Body>
