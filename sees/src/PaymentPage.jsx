@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Container, Card, Button, Alert, Form, Row, Col, Spinner } from 'react-bootstrap';
 import { useUser } from './UserContext';
+import axios from 'axios';
 
 const PaymentPage = () => {
   const { eventId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { userBalance, deductBalance } = useUser();
+  const { userBalance, deductBalance, user } = useUser();
 
   const [event, setEvent] = useState(location.state?.event || null);
   const [loading, setLoading] = useState(!event);
@@ -64,6 +65,30 @@ const PaymentPage = () => {
       }
       setShowStripe(false);
     }, 1500);
+  };
+
+  const handlePay = async () => {
+    setProcessing(true);
+    setError('');
+
+    try {
+      const response = await axios.post(`http://localhost:3001/api/events/${event.id}/pay`, {
+        userId: user.id, // Assuming `user` is available from context
+        amount: event.price,
+        paymentMethod: paymentMethod, // 'balance' or 'stripe'
+      });
+
+      if (response.status === 201) {
+        setPaymentSuccess(true);
+      } else {
+        setError('Payment failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Payment Error:', err);
+      setError('Payment failed. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const pastelBox = {
