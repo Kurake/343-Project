@@ -480,7 +480,7 @@ app.get("/api/users/emails/:eventId", async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT u.email, u.name
-       FROM "attendsEvent" ae
+       FROM "attendsevent" ae
        JOIN "user" u ON ae.userid = u.userid
        WHERE ae.eventid = $1`,
       [eventId]
