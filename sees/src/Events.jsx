@@ -6,6 +6,12 @@ import { useUser } from './UserContext';     // ✅ User context
 import Select from 'react-select';
 import axios from "axios";
 import { hasPermission } from './Utils/permissionUtils';
+import {
+  EventComponent,
+  VIPEventDecorator,
+  CertificationEventDecorator,
+  DiscountEventDecorator
+} from './Decorator/EventDecorator';
 
 const Events = () => {
   const placeholderImage = "/images/stock.jpg";
@@ -15,10 +21,11 @@ const Events = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
-  const [eventData, setEventData] = useState({ title: "", startDate: "", endDate: "", organizers: [], price: "", funding: "", image: "" });
+  const [eventData, setEventData] = useState({ title: "", startDate: "", endDate: "", organizers: [], price: "", funding: "", image: "", isVIP: false, isCertification: false, isDiscounted: false });
   const [dateError, setDateError] = useState("");
   const [allUsers, setAllUsers] = useState([]);
   const [fundingInputs, setFundingInputs] = useState({});
+  const [decoratedEvents, setDecoratedEvents] = useState([]);
   const navigate = useNavigate();
 
 
@@ -37,9 +44,9 @@ const Events = () => {
     // Fetch all users for the dropdown
     const fetchUsers = async () => {
       try {
-        const response = await axios.get("http://localhost:3001/api/users/organizer/emails"); // your endpoint to fetch user emails
-        const users = response.data.map(email => ({ label: email, value: email })); // Prepare user data for dropdown
-        setAllUsers(users); // Update the state with user data
+        const response = await axios.get("http://localhost:3001/api/users/organizer/emails");
+        const users = response.data.map(email => ({ label: email, value: email }));
+        setAllUsers(users);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
@@ -53,7 +60,7 @@ const Events = () => {
       ? {
         ...event,
         organizers: event.organizers.map(email => ({ label: email, value: email })) // Format organizers correctly
-      } : { title: "", startDate: "", endDate: "", organizers: [], price: "", funding: "", image: "" });
+      } : { title: "", startDate: "", endDate: "", organizers: [], price: "", funding: "", image: "", isVIP: false, isCertification: false, isDiscounted: false });
     setShowModal(true);
   };
 
@@ -77,7 +84,7 @@ const Events = () => {
   };
 
   const handleSaveEvent = async () => {
-    const { title, startDate, endDate, organizers, price, funding } = eventData;
+    const { title, startDate, endDate, organizers, price, funding, isVIP, isCertification, isDiscounted } = eventData;
 
     if (new Date(startDate) > new Date(endDate)) {
       setDateError("Start date cannot be after end date");
@@ -91,17 +98,22 @@ const Events = () => {
       price: parseFloat(price) || 0,
       funding: parseFloat(funding) || 0,
       image: eventData.image,
+      isVIP: eventData.isVIP || false,
+      isCertification: eventData.isCertification || false,
+      isDiscounted: eventData.isDiscounted || false,
       organizers: organizers.map(user => user.value),
     };
 
     try {
       if (editingEvent) {
+        console.log(eventPayload);
         // Edit mode — send PUT request
         await axios.put(`http://localhost:3001/api/events/${editingEvent.id}`, eventPayload);
 
         // Update the event in the state (no need to fetch again)
         setEvents(prev => prev.map(event => event.id === editingEvent.id ? { ...event, ...eventPayload } : event));
       } else {
+        console.log(eventPayload);
         // Create mode — send POST request
         const response = await axios.post("http://localhost:3001/api/events", eventPayload);
         const newEvent = { ...response.data, id: response.data.eventid };
@@ -140,6 +152,33 @@ const Events = () => {
     }
   };
 
+  useEffect(() => {
+    // Decorate events dynamically based on conditions (VIP, Certification, Discounted)
+    const updatedEvents = events.map((event) => {
+      let decoratedEvent = new EventComponent(event); // Start with the base EventComponent
+
+      if (event.isVIP) {
+        decoratedEvent = new VIPEventDecorator(decoratedEvent); // Apply VIP decorator
+      }
+      if (event.isCertification) {
+        decoratedEvent = new CertificationEventDecorator(decoratedEvent); // Apply Certification decorator
+      }
+      if (event.isDiscounted) {
+        decoratedEvent = new DiscountEventDecorator(decoratedEvent); // Apply Discount decorator
+      }
+
+      //console.log(decoratedEvent.getTitle())
+      // Return an object with modified title and price, but leave the original event intact
+      return {
+        ...event,
+        title: decoratedEvent.getTitle(), // Get the decorated title
+        price: decoratedEvent.getPrice(), // Get the decorated price
+      };
+    });
+
+    setDecoratedEvents(updatedEvents); // Store the decorated events in state
+  }, [events]);
+
   return (
     <Container className="mt-4">
       <div className="d-flex mb-4">
@@ -152,12 +191,11 @@ const Events = () => {
               border: "none",
               color: "#fff",
               fontWeight: "bold"
-            }}
-          >
+            }}>
             Add Event
           </Button>
         )}
-
+        {hasPermission(user, 'analytics') && (
         <Button
           variant="info"
           className="ms-3"
@@ -167,14 +205,13 @@ const Events = () => {
             border: "none",
             color: "#fff",
             fontWeight: "bold"
-          }}
-        >
+          }}>
           View Analytics
-        </Button>
+        </Button>)}
       </div>
 
       <Row className="g-4 justify-content-center">
-        {events.map((event) => (
+        {decoratedEvents.map((event) => (
           <Col key={`${event.id}-${event.title}`} md={6} lg={3} className="d-flex" style={{ maxWidth: "320px" }}>
             <Card
               className="w-100 shadow-sm p-3"
@@ -202,7 +239,7 @@ const Events = () => {
                 </Card.Text>
                 <Card.Text>
                   <strong>Attendees:</strong> {event.attendeesCount} <br />
-                  <strong>Revenue:</strong> ${event.revenue.toFixed(2)}
+                  <strong>Revenue:</strong> ${event.revenue?.toFixed(2)}
                 </Card.Text>
                 <Card.Text>
                   <strong>Price:</strong> ${event.price?.toFixed(2)} <br />
@@ -219,7 +256,10 @@ const Events = () => {
                   <Button
                     variant="warning"
                     style={{ backgroundColor: "#FFB5A7", border: "none", color: "#fff" }}
-                    onClick={() => handleShow(event)}>
+                    onClick={() => {
+                      const originalEvent = events.find(e => e.id === event.id); // ✅ Get real event
+                      handleShow(originalEvent);
+                    }}>
                     Edit
                   </Button>
                 )}
@@ -279,6 +319,32 @@ const Events = () => {
                 value={eventData.organizers}
                 onChange={(selectedOptions) => setEventData(prev => ({ ...prev, organizers: selectedOptions }))} // Updates the state with selected options
                 required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                label="VIP Event"
+                checked={eventData.isVIP || false}
+                onChange={() => setEventData(prev => ({ ...prev, isVIP: !prev.isVIP }))}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                label="Certification Available"
+                checked={eventData.isCertification || false}
+                onChange={() => setEventData(prev => ({ ...prev, isCertification: !prev.isCertification }))}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                label="Discounted Event"
+                checked={eventData.isDiscounted || false}
+                onChange={() => setEventData(prev => ({ ...prev, isDiscounted: !prev.isDiscounted }))}
               />
             </Form.Group>
             <Form.Group className="mb-3">

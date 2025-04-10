@@ -356,9 +356,9 @@ app.get("/api/events", async (req, res) => {
 });
 
 app.post("/api/events", async (req, res) => {
-  const { title, startDate, endDate, price, funding, image, organizers } = req.body;
+  const { title, startDate, endDate, price, funding, image, organizers, isVIP, isCertification, isDiscounted } = req.body;
 
-  if (!title || !startDate || !endDate || price == null || funding == null || !image || !organizers || !organizers.length) {
+  if (!title || !startDate || !endDate || price == null || funding == null || isVIP == null || isCertification == null || isDiscounted == null || !image || !organizers || !organizers.length) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
@@ -369,9 +369,9 @@ app.post("/api/events", async (req, res) => {
 
     // Insert the event
     const eventResult = await client.query(
-      `INSERT INTO event (title, startdate, enddate, price, image, attendeescount, revenue, funding)
-         VALUES ($1, $2, $3, $4, $5, 0, 0, 0) RETURNING *`,
-      [title, startDate, endDate, price, image]
+      `INSERT INTO event (title, startdate, enddate, price, image, isvip, iscertification, isdiscounted, attendeescount, revenue, funding)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 0, 0) RETURNING *`,
+      [title, startDate, endDate, price, image, isVIP, isCertification, isDiscounted]
     );
 
     const newEvent = eventResult.rows[0];
@@ -405,18 +405,18 @@ app.post("/api/events", async (req, res) => {
 });
 
 app.put("/api/events/:id", async (req, res) => {
-  const { title, startDate, endDate, price, organizers, funding, image } = req.body;
+  const { title, startDate, endDate, price, funding, image, organizers, isVIP, isCertification, isDiscounted } = req.body;
   const eventId = req.params.id;
 
-  if (!title || !startDate || !endDate || price == null || funding == null || !image || !organizers) {
+  if (!title || !startDate || !endDate || price == null || funding == null || !image || isVIP == null || isCertification == null || isDiscounted == null || !organizers) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
   try {
     // Update the Event table
     await pool.query(
-      `UPDATE Event SET title=$1, startdate=$2, enddate=$3, price=$4, funding=$5, image=$6 WHERE eventid=$7`,
-      [title, startDate, endDate, price, funding, image, eventId]
+      `UPDATE Event SET title=$1, startdate=$2, enddate=$3, price=$4, funding=$5, image=$6, isvip=$7, iscertification=$8, isdiscounted=$9 WHERE eventid=$10`,
+      [title, startDate, endDate, price, funding, image, isVIP, isCertification, isDiscounted, eventId]
     );
 
     // Remove old organizers
