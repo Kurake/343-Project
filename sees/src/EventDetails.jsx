@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Container, Card, Button, Modal, Form, ListGroup } from "react-bootstrap";
 import { useUser } from './UserContext';
 import axios from "axios";
+import { hasPermission } from './Utils/permissionUtils';
 
 const pastelBox = {
   backgroundColor: "#FDF6F0",
@@ -22,7 +23,11 @@ const EventDetails = () => {
     startDate: location.state?.startDate || "",
     endDate: location.state?.endDate || "",
     price: location.state?.price || 0,
+    funding: location.state?.funding || 0,
     image: location.state?.image || "/images/stock.jpg",
+    isVIP: location.state?.isVIP || false,
+    isCertification: location.state?.isCertification || false,
+    isDiscounted: location.state?.isDiscounted || false,
     organizers: Array.isArray(location.state?.organizers) ? location.state.organizers : [],
     sessions: location.state?.sessions || [],
   });
@@ -60,7 +65,7 @@ const EventDetails = () => {
     try {
       const sessionData = { ...newSession };
       const url = `http://localhost:3001/api/events/${event.id}/sessions`;
-  
+
       // If editing an existing session, send PUT request
       if (editingSessionIndex !== null) {
         await axios.put(`${url}/${event.sessions[editingSessionIndex].sessionid}`, sessionData);
@@ -68,7 +73,7 @@ const EventDetails = () => {
         // Add new session by sending POST request
         await axios.post(url, sessionData);
       }
-  
+
       // After adding or editing session, fetch updated session list
       fetchSessions();  // <-- This is the new call to fetch updated sessions
       handleSessionClose();  // Close the modal after saving
@@ -112,7 +117,7 @@ const EventDetails = () => {
         console.error('Error fetching users:', error);
       }
     };
-  
+
     fetchUsers();
     fetchSessions();  // <-- This is the call to fetch sessions initially
   }, [event.id]);  // <-- It will run again when event.id changes
@@ -121,24 +126,24 @@ const EventDetails = () => {
     const fetchPaymentStatus = async () => {
       try {
         if (!user || !user.isLoggedIn || !user.email || !event.id) return;
-        
+
         // Make sure event.id is a number
         const eventId = parseInt(event.id, 10);
         if (isNaN(eventId)) {
           console.error('Invalid event ID:', event.id);
           return;
         }
-        
+
         const response = await axios.get(
           `http://localhost:3001/api/events/${eventId}/payments/${encodeURIComponent(user.email)}`
         );
-        
+
         setPaymentStatus(response.data.status);
       } catch (error) {
         console.error('Error fetching payment status:', error);
       }
     };
-  
+
     if (user && user.isLoggedIn) {
       fetchPaymentStatus();
     }
@@ -148,7 +153,7 @@ const EventDetails = () => {
     const fetchPaymentStatus = async () => {
       try {
         if (!user || !user.isLoggedIn || !user.email) return;
-        
+
         const response = await axios.get(
           `http://localhost:3001/api/events/${event.id}/payments/${user.email}`
         );
@@ -157,7 +162,7 @@ const EventDetails = () => {
         console.error('Error fetching payment status:', error);
       }
     };
-  
+
     if (location.state?.forceRefresh && user?.isLoggedIn) {
       fetchPaymentStatus();
     }
@@ -185,13 +190,18 @@ const EventDetails = () => {
             </Button>
           )}
           {paymentStatus !== 'completed' && (
-            <Button
-              variant="primary"
-              className="ms-2"
-              onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
-            >
-              Register (${event.price ? event.price.toFixed(2) : '0.00'})
-            </Button>
+            (!event.isVIP || hasPermission(user, 'isVIP')) ? (
+              <Button
+                variant="primary"
+                className="ms-2"
+                onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}>
+                Register (${event.price ? event.price.toFixed(2) : '0.00'})
+              </Button>
+            ) : (
+              <p style={{ color: "red", marginTop: "1rem" }}>
+                This is a VIP event. Only sponsors and organizers can register.
+              </p>
+            )
           )}
         </Card.Body>
       </Card>

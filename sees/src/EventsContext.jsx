@@ -58,6 +58,10 @@ export const EventsProvider = ({ children }) => {
       price: event.price || 0,
       attendeesCount: event.attendeescount || 0,
       revenue: event.revenue || 0,
+      funding: event.funding || 0,
+      isVIP: event.isvip || false,
+      isCertification: event.iscertification || false,
+      isDiscounted: event.isdiscounted || false,
     }));
   };
 
@@ -65,6 +69,7 @@ export const EventsProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await axios.get("http://localhost:3001/api/events");
+      console.log(response.data);
       const transformed = transformEvents(response.data);
       setEvents(transformed);
     } catch (err) {

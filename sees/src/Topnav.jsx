@@ -5,6 +5,7 @@ import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import Button from 'react-bootstrap/Button';
 import { useUser } from './UserContext';
+import { hasPermission } from './Utils/permissionUtils';
 
 function Topnav() {
   const { user, logout } = useUser();
@@ -44,7 +45,7 @@ function Topnav() {
           <Nav className="me-auto">
             <Nav.Link as={Link} to="/" style={linkStyle}>Home</Nav.Link>
             <Nav.Link as={Link} to="events" style={linkStyle}>Event Dashboard</Nav.Link>
-            <Nav.Link as={Link} to="analytics" style={linkStyle}>Analytics</Nav.Link>
+            {hasPermission(user, 'analytics') && (<Nav.Link as={Link} to="analytics" style={linkStyle}>Analytics</Nav.Link>)}
             <Nav.Link as={Link} to="chatroom" style={linkStyle}>Chatroom</Nav.Link>
           </Nav>
 
@@ -54,9 +55,9 @@ function Topnav() {
                 <Navbar.Text className="me-3" style={{ color: '#2E2E2E' }}>
                   Signed in as <strong>{user.name}</strong>
                 </Navbar.Text>
-                <Button 
-                  variant="outline-dark" 
-                  size="sm" 
+                <Button
+                  variant="outline-dark"
+                  size="sm"
                   onClick={handleLogout}
                 >
                   Logout

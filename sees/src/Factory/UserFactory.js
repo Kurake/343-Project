@@ -29,7 +29,7 @@ class BaseUser {
     }
   
     getPermissions() {
-      return ['view_events', 'register', 'sponsor'];
+      return ['view_events', 'register', 'sponsor', 'isVIP', 'analytics'];
     }
   }
   
@@ -39,7 +39,7 @@ class BaseUser {
     }
   
     getPermissions() {
-      return ['view_events', 'register', 'create_events', 'edit_events', 'manage_users'];
+      return ['view_events', 'register', 'create_events', 'edit_events', 'manage_users', 'isVIP', 'analytics'];
     }
   }
   
