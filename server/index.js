@@ -470,6 +470,28 @@ app.get("/api/users/organizer/emails", async (req, res) => {
   }
 });
 
+//Get user emails whose eventIDs match 
+app.get("/api/users/emails/:eventId", async (req, res) => {
+  const eventId = req.params.eventId;
+
+  try {
+    const result = await pool.query(
+      `SELECT u.email, u.name
+       FROM attendsEvent ae
+       JOIN "user" u ON ae.userid = u.userid
+       WHERE ae.eventid = $1`,
+      [eventId]
+    );
+    
+    const users = result.rows;
+    res.status(200).json({ users });
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ message: 'Error fetching users' });
+  }
+});
+
+
 app.post('/api/events/:eventId/sessions', async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -659,6 +681,13 @@ app.post('/api/events/:eventId/pay', async (req, res) => {
            attendeescount = COALESCE(attendeescount, 0) + 1 
        WHERE eventid = $2`,
       [amount, eventIdInt]
+    );
+
+    // With event revenue and attendees updated, you can now add to attendsEvent
+    await client.query(
+      `INSERT INTO attendingEvent (eventid, userid)
+       VALUES ($1, $2)`,
+      [eventIdInt, actualUserId]
     );
 
     await client.query('COMMIT');

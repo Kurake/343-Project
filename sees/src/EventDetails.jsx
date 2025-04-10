@@ -14,7 +14,7 @@ const pastelBox = {
 };
 
 const EventDetails = () => {
-  const { user } = useUser();
+  const { userBalance, user } = useUser();
   const userRole = user.role;
   const location = useLocation();
   const navigate = useNavigate();
@@ -37,7 +37,6 @@ const EventDetails = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [paymentStatus, setPaymentStatus] = useState(null);
 
-  const { userBalance, user } = useUser();
 
   const handleSessionShow = (index = null) => {
     setEditingSessionIndex(index);
@@ -166,12 +165,35 @@ const EventDetails = () => {
       fetchPaymentStatus();
     }
   }, [location.state]);
+
   const handleSendNote = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/users/emails', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+      });
+      const emails = await res.json();
+
+      if(res.ok) {
+        // You can now handle the emails (e.g., prepare them for mailing or display)
+        emails.forEach(email => {
+          sendNote(email);
+        });
+      } else {
+        console.error("Error fetching users:", data.message);
+      }
+    } catch (err) {
+      console.error("Error fetching attending users:", err);
+    }
+
+  };
+
+  const sendNote = async (user) => {
     try {
       const res = await fetch('http://localhost:3001/message', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: "clark.long@yahoo.com", event: event.title})
+        body: JSON.stringify({email: user, event: event.title})
       });
       // Check if the response is JSON before parsing it
       const contentType = res.headers.get("Content-Type");
@@ -185,15 +207,43 @@ const EventDetails = () => {
       alert('Error sending email, 123 ' + err);
       console.error(err);
     }
-  };
+  }
 
   const handleSendCert = async () => {
+    const eventId = parseInt(event.id, 10);
+    // Need to do this multiple times. In order to know who to send it to, use id to get emails
     console.log("HANDLING SENDING CERTIFICATIONS");
+
+    try {
+      const res = await fetch('http://localhost:3001/api/users/emails/${eventId}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ eventId }) // Send eventId in the request body
+      });
+      const data = await res.json();
+
+      if(res.ok) {
+        const users = data.users; // Array of users with emails and names
+        console.log('Attending users:', users);
+  
+        // You can now handle the users (e.g., prepare them for mailing or display)
+        users.forEach(user => {
+          sendCerts(user)
+        });
+      } else {
+        console.error("Error fetching users:", data.message);
+      }
+    } catch (err) {
+      console.error("Error fetching attending users:", err);
+    }
+  };
+
+  const sendCerts = async (user) => {
     try {
       const res = await fetch('http://localhost:3001/send-email', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: "clark.long@yahoo.com", event: event.title, name: "Clark Long"})
+        body: JSON.stringify({email: user.email, event: event.title, name: user.name})
       });
       console.log('Fetch response status:', res.status);
       const result = await res.json();
@@ -201,7 +251,8 @@ const EventDetails = () => {
       alert('Error sending email, 123 ' + err);
       console.error(err);
     }
-  };
+  }
+
 
   const notiPopover = (
     <Popover id="popover-basic">
