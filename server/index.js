@@ -595,6 +595,14 @@ app.post('/api/events/:eventId/pay', async (req, res) => {
       [userId, eventId, amount, paymentMethod]
     );
 
+    // Update event revenue and attendee count
+    await client.query(
+      `UPDATE event 
+       SET revenue = revenue + $1, attendeescount = attendeescount + 1 
+       WHERE eventid = $2`,
+      [amount, eventId]
+    );
+
     await client.query('COMMIT');
     res.status(201).json(transactionResult.rows[0]);
   } catch (err) {
