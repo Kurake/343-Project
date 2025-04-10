@@ -147,13 +147,15 @@ const EventDetails = () => {
             Payment Status: <strong>{paymentStatus || 'Not Paid'}</strong>
           </Card.Text>
           <Button variant="success" className="ms-2" onClick={() => handleSessionShow()}>Add Session</Button>
-          <Button
-            variant="primary"
-            className="ms-2"
-            onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
-          >
-            Register (${event.price ? event.price : '0.00'})
-          </Button>
+          {paymentStatus !== 'completed' && (
+            <Button
+              variant="primary"
+              className="ms-2"
+              onClick={() => navigate(`/event/${event.id}/payment`, { state: { event } })}
+            >
+              Register (${event.price ? event.price : '0.00'})
+            </Button>
+          )}
         </Card.Body>
       </Card>
 
