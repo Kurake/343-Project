@@ -606,6 +606,29 @@ app.post('/api/events/:eventId/pay', async (req, res) => {
   }
 });
 
+// GET /api/events/:eventId/payments/:userId - Check payment status
+app.get('/api/events/:eventId/payments/:userId', async (req, res) => {
+  try {
+    const { eventId, userId } = req.params;
+    
+    const result = await pool.query(
+      `SELECT status FROM transaction 
+       WHERE eventid = $1 AND userid = $2
+       ORDER BY transactionid DESC LIMIT 1`,
+      [eventId, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(200).json({ status: 'Not Paid' });
+    }
+    
+    res.status(200).json({ status: result.rows[0].status });
+  } catch (error) {
+    console.error('Error checking payment status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 app.listen(3001, () => {
   console.log('✅ Server running on http://localhost:3001');
 });
