@@ -14,10 +14,17 @@ const pastelBox = {
 const EventDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Provide default values to avoid accessing undefined properties
   const [event, setEvent] = useState({
-    ...location.state,
-    organizers: Array.isArray(location.state.organizers) ? location.state.organizers : [],
-    sessions: location.state.sessions || []
+    id: location.state?.id || null,
+    title: location.state?.title || "Untitled Event",
+    startDate: location.state?.startDate || "",
+    endDate: location.state?.endDate || "",
+    price: location.state?.price || 0,
+    image: location.state?.image || "/images/stock.jpg",
+    organizers: Array.isArray(location.state?.organizers) ? location.state.organizers : [],
+    sessions: location.state?.sessions || [],
   });
 
   const [showSessionModal, setShowSessionModal] = useState(false);
