@@ -1,3 +1,32 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 17.4
+-- Dumped by pg_dump version 17.4
+
+-- Started on 2025-04-10 04:50:03
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 217 (class 1259 OID 534114)
+-- Name: event; Type: TABLE; Schema: public; Owner: postgres
+--
 
 CREATE TABLE public.event (
     eventid integer NOT NULL,
@@ -6,7 +35,12 @@ CREATE TABLE public.event (
     enddate date NOT NULL,
     price double precision DEFAULT 0 NOT NULL,
     attendeescount integer DEFAULT 0 NOT NULL,
-    revenue double precision DEFAULT 0 NOT NULL
+    revenue double precision DEFAULT 0 NOT NULL,
+    funding double precision DEFAULT 0 NOT NULL,
+    image character varying(50) NOT NULL,
+    isvip boolean DEFAULT false NOT NULL,
+    iscertification boolean DEFAULT false NOT NULL,
+    isdiscounted boolean DEFAULT false NOT NULL
 );
 
 
@@ -82,7 +116,10 @@ CREATE TABLE public.transaction (
     transactionid integer NOT NULL,
     userid integer NOT NULL,
     fees double precision NOT NULL,
-    type character varying(50) NOT NULL
+    type character varying(50) NOT NULL,
+    status character varying(20) DEFAULT 'pending'::character varying NOT NULL,
+    eventid integer NOT NULL,
+    paymentmethod character varying(50) NOT NULL
 );
 
 
@@ -207,6 +244,15 @@ ALTER TABLE ONLY public.eventsession
 
 
 --
+-- TOC entry 4732 (class 2606 OID 534297)
+-- Name: transaction EventID; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.transaction
+    ADD CONSTRAINT "EventID" FOREIGN KEY (eventid) REFERENCES public.event(eventid) ON UPDATE SET DEFAULT ON DELETE CASCADE NOT VALID;
+
+
+--
 -- TOC entry 4731 (class 2606 OID 534155)
 -- Name: eventorganizer UserID; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
@@ -216,22 +262,17 @@ ALTER TABLE ONLY public.eventorganizer
 
 
 --
--- TOC entry 4732 (class 2606 OID 534173)
+-- TOC entry 4733 (class 2606 OID 534173)
 -- Name: transaction UserID; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
--- ALTER TABLE ONLY public.transaction
---     ADD CONSTRAINT "UserID" FOREIGN KEY (userid) REFERENCES public."user"(userid) ON UPDATE SET DEFAULT ON DELETE CASCADE NOT VALID;
+ALTER TABLE ONLY public.transaction
+    ADD CONSTRAINT "UserID" FOREIGN KEY (userid) REFERENCES public."user"(userid) ON UPDATE SET DEFAULT ON DELETE CASCADE NOT VALID;
 
-ALTER TABLE public.transaction
-ADD COLUMN eventid integer NOT NULL,
-ADD COLUMN paymentmethod character varying(50) NOT NULL,
-ADD COLUMN status character varying(20) DEFAULT 'pending' NOT NULL;
--- Completed on 2025-04-09 04:57:49
+
+-- Completed on 2025-04-10 04:50:03
 
 --
 -- PostgreSQL database dump complete
 --
-
-
 
