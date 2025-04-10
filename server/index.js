@@ -5,6 +5,7 @@ const cors = require('cors');
 const pool = require('./conn');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/auth');
+const sendMail = require('./Mailer');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -415,6 +416,19 @@ app.get("/api/events", async (req, res) => {
 //     res.status(500).json({ message: "Internal server error" });
 //   }
 // });
+
+app.post('/send-email', async(req, res) => {
+    const {email, event, name} = req.body;
+
+    try {
+        console.log('email:', email);
+        console.log('event:', event);
+        console.log('name:', name);
+        await sendMail({email, event, name});
+    } catch (err){
+        console.error(err);
+    }
+});
 
 app.listen(3001, () => {
   console.log('✅ Server running on http://localhost:3001');
