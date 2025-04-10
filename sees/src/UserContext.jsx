@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { UserFactory } from './Factory/UserFactory';
 
 const UserContext = createContext();
 
@@ -7,14 +8,15 @@ export const UserProvider = ({ children }) => {
     const savedBalance = localStorage.getItem('userBalance');
     return savedBalance ? parseFloat(savedBalance) : 20.00;
   });
-  
+
   const [user, setUser] = useState(() => {
-    return {
+    const rawUser = {
       isLoggedIn: localStorage.getItem('isLoggedIn') === 'true',
       name: localStorage.getItem('userName') || '',
       email: localStorage.getItem('userEmail') || '',
       role: localStorage.getItem('userRole') || 'user',
     };
+    return UserFactory(rawUser);
   });
 
   useEffect(() => {
@@ -24,7 +26,7 @@ export const UserProvider = ({ children }) => {
   const deductBalance = (amount) => {
     setUserBalance(prevBalance => {
       const newBalance = prevBalance - amount;
-      return Math.max(newBalance, 0); 
+      return Math.max(newBalance, 0);
     });
   };
 
@@ -33,10 +35,12 @@ export const UserProvider = ({ children }) => {
   };
 
   const login = (userData) => {
-    setUser({
+    const userWithLogin = {
       isLoggedIn: true,
       ...userData
-    });
+    };
+    setUser(UserFactory(userWithLogin));
+
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('userName', userData.name || '');
     localStorage.setItem('userEmail', userData.email || '');
@@ -44,12 +48,14 @@ export const UserProvider = ({ children }) => {
   };
 
   const logout = () => {
-    setUser({
+    const defaultUser = {
       isLoggedIn: false,
       name: '',
       email: '',
       role: 'user'
-    });
+    };
+    setUser(UserFactory(defaultUser));
+
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userName');
     localStorage.removeItem('userEmail');
@@ -57,10 +63,10 @@ export const UserProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={{ 
-      userBalance, 
-      setUserBalance, 
-      deductBalance, 
+    <UserContext.Provider value={{
+      userBalance,
+      setUserBalance,
+      deductBalance,
       addBalance,
       user,
       login,
