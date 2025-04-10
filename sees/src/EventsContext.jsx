@@ -16,6 +16,7 @@ export const EventsProvider = ({ children }) => {
       price: 9.99,
       attendeesCount: 120,
       revenue: 1198.80,
+      funding: 250,
     },
     {
       id: 2,
@@ -27,6 +28,7 @@ export const EventsProvider = ({ children }) => {
       price: 2.99,
       attendeesCount: 80,
       revenue: 239.20,
+      funding: 200,
     },
     {
       id: 3,
@@ -38,6 +40,7 @@ export const EventsProvider = ({ children }) => {
       price: 4.99,
       attendeesCount: 60,
       revenue: 299.40,
+      funding: 0,
     },
   ]);
 
@@ -46,15 +49,16 @@ export const EventsProvider = ({ children }) => {
 
   const transformEvents = (data) => {
     return data.map(event => ({
-      id: event.EventID,
-      title: event.Title,
-      startDate: event.StartDate.split('T')[0], // remove time
-      endDate: event.EndDate.split('T')[0],     // remove time
-      image: "", // You can replace this later
-      organizers: [], // Fill this in if you fetch organizer emails separately
-      price: event.Price,
-      attendeesCount: event.AttendeesCount,
-      revenue: event.Revenue,
+      id: event.eventid,
+      title: event.title,
+      startDate: event.startdate.split('T')[0], // remove time
+      endDate: event.enddate.split('T')[0],     // remove time
+      image: event.image, // You can replace this later
+      organizers: event.organizers || [], // Fill this in if you fetch organizer emails separately
+      price: event.price,
+      attendeesCount: event.attendeescount,
+      revenue: event.revenue,
+      funding: event.funding,
     }));
   };
 
@@ -63,7 +67,6 @@ export const EventsProvider = ({ children }) => {
       try {
         const response = await axios.get("http://localhost:3001/api/events"); // update URL to match your backend
         const transformed = transformEvents(response.data);
-        console.log(transformed);
         setEvents(transformed);
       } catch (err) {
         console.error("Error fetching events:", err);
