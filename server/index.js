@@ -375,6 +375,21 @@ app.post("/api/events", async (req, res) => {
     );
 
     const newEvent = eventResult.rows[0];
+    const camelCaseEvent = {
+      eventid: newEvent.eventid,
+      title: newEvent.title,
+      startDate: newEvent.startdate.toISOString().split("T")[0],
+      endDate: newEvent.enddate.toISOString().split("T")[0],
+      price: newEvent.price,
+      image: newEvent.image,
+      isVIP: newEvent.isvip,
+      isCertification: newEvent.iscertification,
+      isDiscounted: newEvent.isdiscounted,
+      attendeesCount: newEvent.attendeescount,
+      revenue: newEvent.revenue,
+      funding: newEvent.funding,
+      organizers
+    };
 
     // Get user IDs for the given organizer emails
     const userResult = await client.query(
@@ -394,7 +409,7 @@ app.post("/api/events", async (req, res) => {
 
     await client.query('COMMIT');
 
-    res.status(201).json({ ...newEvent, organizers });
+    res.status(201).json(camelCaseEvent);
   } catch (err) {
     await client.query('ROLLBACK');
     console.error("Create Event Error:", err);

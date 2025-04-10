@@ -30,18 +30,17 @@ const Events = () => {
 
 
   const availableImages = [
-    "/images/logo192.png",
-    "/images/cowboy.jpg",
-    "/images/magic.jpg",
-    "/images/powerranger.jpg",
-    "/images/spiderman.jpg",
-    "/images/sunflower.jpg",
+    "/images/concert.webp",
+    "/images/fancydinner.avif",
+    "/images/seminar.jpg",
+    "/images/presentation.webp",
+    "/images/FormalEvent.jpg",
+    "/images/PodCast.jpg",
     "/images/stock.jpg", // your default
   ];
 
   // Fetch all users (organizers) when modal opens
   useEffect(() => {
-    // Fetch all users for the dropdown
     const fetchUsers = async () => {
       try {
         const response = await axios.get("http://localhost:3001/api/users/organizer/emails");
