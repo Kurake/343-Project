@@ -6,8 +6,10 @@ const pool = require('./conn');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/auth');
 const sendMail = require('./Mailer');
+const notifier = require('./notifier');
 
 const app = express();
+app.use(express.json()); 
 const http = require('http').createServer(app);
 app.use(cors());
 app.use(bodyParser.json());
@@ -18,6 +20,7 @@ const io = require('socket.io')(http, {
 });
 
 app.use('/api/auth', authRoutes);
+
 
 const sessions = new Map();
 const globalRoomId = uuidv4();
@@ -721,6 +724,20 @@ app.post('/send-email', async(req, res) => {
     } catch (err){
         console.error(err);
     }
+});
+
+app.post('/message', async (req, res)=> {
+  console.log("Posting prepped")
+  try {
+    const {email, event} = req.body;
+    // Emit the message event with payload
+    notifier.emit('message', {email, event});
+  
+    res.status(200).json({ success: true, msg: 'Message received and being processed.' });
+  } catch (err){
+    console.error('Error sending email: ', err);
+    res.status(500).json({ message: 'Error sending email' }); // Send error response as JSON
+  }
 });
 
 app.listen(3001, () => {

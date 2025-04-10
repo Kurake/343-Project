@@ -2,6 +2,8 @@ const { PDFDocument, StandardFonts } = require('pdf-lib');
 const { Buffer } = require('buffer'); 
 var nodemailer = require('nodemailer');
 const { isNull } = require('util');
+const notifier = require('./notifier');
+
 console.log("Creating email");
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -12,13 +14,11 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendEmail({email, event, name}){
-  // If name is specified, then it's a personalized certificate sent to the user
   console.log('email:', email);
   console.log('event:', event);
   console.log('name:', name);
   if(name != null){
     // INSERT PDF FILE MODIFICATION CODE IN THE FOLLOWING
-    // NAME PDF USING TIMESTAMP TO MINIMIZE RACE CONDITION
     const existingPdfBytes = await fetch('http://localhost:3000/images/Certificate.pdf').then(res => res.arrayBuffer());
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
     const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
@@ -64,8 +64,8 @@ async function sendEmail({email, event, name}){
       from: 'sees.mailer.daemon@gmail.com',
       to: email,
       subject: 'Certification from event ' + event,
-      text: 'Hello ' + name + '.\n\nCongratulations on attending the ' + event + ' event. Attached below is your newfound certification.' +
-      ' Thank you for choosing SEES, and we hope you have an EVENTful rest of the day!\n\nRegards,\nThe SEES Team',
+      text: 'Hello ' + name + '.\n\nCongratulations on attending the ' + event + ' event. Attached below is your newfound' 
+      + 'certification. Thank you for choosing SEES, and we hope you have an EVENTful rest of the day!\n\nRegards,\nThe SEES Team',
       attachments: [
         {
             filename: 'Certificate.pdf', 
@@ -73,14 +73,6 @@ async function sendEmail({email, event, name}){
             contentType: 'application/pdf'
         }
       ]
-    }
-  // If no name specified, it is a mass email sent for promotional purposes.
-  } else {
-    var mailOptions = {
-      from: 'sees.mailer.daemon@gmail.com',
-      to: email,
-      subject: 'Event ' + event + '',
-      text: 'PLACEHOLDER TEXT FOR LATER DETERMINATION'
     }
   }
   await transporter.sendMail(mailOptions, function(error, info){
@@ -91,5 +83,26 @@ async function sendEmail({email, event, name}){
     }
   });
 }
+
+notifier.on('message', async (data) => {
+  const {email, event} = data;
+  var mailOptions = {
+    from: 'sees.mailer.daemon@gmail.com',
+    to: email,
+    subject: 'Event ' + event + '',
+    text: 'Hello precious user! We have a grand new opportunity for you! An event ' + event + ' is going to occur!' +
+    ' If you\'d like to find out more, log in and join us now! We hope to see you around soon, friend!\n\nRegards,' + 
+    '\nThe SEES Team'
+  }
+  try {
+    console.log(email);
+    console.log(event);
+    console.log(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+  } catch (err) {
+    console.error('Failed to send email:', err);
+  }
+})
 
 module.exports = sendEmail;

@@ -168,21 +168,27 @@ const EventDetails = () => {
   }, [location.state]);
   const handleSendNote = async () => {
     try {
-      const res = await fetch('http://localhost:3001/send-email', {
+      const res = await fetch('http://localhost:3001/message', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: "clark.long@yahoo.com", event: event.title, name: null})
+        body: JSON.stringify({email: "clark.long@yahoo.com", event: event.title})
       });
-      console.log('Fetch response status:', res.status);
-      const result = await res.json();
-      alert(result.message);
-    } catch(err) {
+      // Check if the response is JSON before parsing it
+      const contentType = res.headers.get("Content-Type");
+      if (contentType && contentType.includes("application/json")) {
+        const result = await res.json();
+      } else {
+        console.error("Expected JSON response, but received:", contentType);
+        alert("Error: Expected JSON response, but got something else.");
+      }
+    } catch (err) {
       alert('Error sending email, 123 ' + err);
       console.error(err);
     }
   };
 
   const handleSendCert = async () => {
+    console.log("HANDLING SENDING CERTIFICATIONS");
     try {
       const res = await fetch('http://localhost:3001/send-email', {
         method: 'POST',
@@ -191,7 +197,6 @@ const EventDetails = () => {
       });
       console.log('Fetch response status:', res.status);
       const result = await res.json();
-      alert(result.message);
     } catch(err) {
       alert('Error sending email, 123 ' + err);
       console.error(err);
