@@ -41,7 +41,6 @@ const Events = () => {
 
   // Fetch all users (organizers) when modal opens
   useEffect(() => {
-    // Fetch all users for the dropdown
     const fetchUsers = async () => {
       try {
         const response = await axios.get("http://localhost:3001/api/users/organizer/emails");

@@ -69,7 +69,6 @@ export const EventsProvider = ({ children }) => {
     try {
       setLoading(true);
       const response = await axios.get("http://localhost:3001/api/events");
-      console.log(response.data);
       const transformed = transformEvents(response.data);
       setEvents(transformed);
     } catch (err) {
