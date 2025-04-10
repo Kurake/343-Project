@@ -16,6 +16,7 @@ export const EventsProvider = ({ children }) => {
       price: 9.99,
       attendeesCount: 120,
       revenue: 1198.80,
+      funding: 250,
     },
     {
       id: 2,
@@ -27,6 +28,7 @@ export const EventsProvider = ({ children }) => {
       price: 2.99,
       attendeesCount: 80,
       revenue: 239.20,
+      funding: 200,
     },
     {
       id: 3,
@@ -38,6 +40,7 @@ export const EventsProvider = ({ children }) => {
       price: 4.99,
       attendeesCount: 60,
       revenue: 299.40,
+      funding: 0,
     },
   ]);
 
@@ -50,11 +53,12 @@ export const EventsProvider = ({ children }) => {
       title: event.title,
       startDate: event.startdate.split('T')[0], // remove time
       endDate: event.enddate.split('T')[0],     // remove time
-      image: "", // You can replace this later
+      image: event.image, // You can replace this later
       organizers: event.organizers || [], // Fill this in if you fetch organizer emails separately
       price: event.price,
       attendeesCount: event.attendeescount,
       revenue: event.revenue,
+      funding: event.funding,
     }));
   };
 
